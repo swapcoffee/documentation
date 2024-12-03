@@ -1,0 +1,137 @@
+---
+title: 'Start with UI Widget'
+description: 'Integrate widget of swap.coffee aggregator in a couple of minutes.'
+icon: 'wand-sparkles'
+---
+
+<p align="center">
+    <a href="https://swap.coffee" target="blank"><img src="https://avatars.githubusercontent.com/u/171727895?s=400&u=f6a9b30455abed8c09dc7d4e6108eb21d0715ade&v=4" width="130" alt="swap.coffee logo" /></a>
+</p>
+
+<p align="center">Swap Widget for integration swap.coffee DEX aggregator into your web application</p>
+
+<p align="center">
+    <a href="https://www.npmjs.com/package/@swap-coffee/ui-sdk"><img alt="npm" src="https://img.shields.io/npm/v/%40swap-coffee%2Fui-sdk?labelColor=%23fffff&color=%233e1c00"/></a>
+    <a href="https://opensource.org/licenses/mit"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue"/></a>
+</p>
+
+
+# Installation
+
+The Swap Widget can be easily integrated into any web framework **(React, Vue, Angular, etc.)**. To install the SDK for `JavaScript/TypeScript`, use the following npm package:
+
+```bash
+$ npm install @swap-coffee/ui-sdk
+```
+
+## Concepts
+
+Basic concept you need to know to work with our Swap Widget:
+
+- **TonConnectUI**: **TonConnectUI** is a library that simplifies the integration of the `TON` blockchain into your application. It provides a user-friendly interface for connecting and interacting with TON-compatible wallets, allowing users to perform transactions. With TonConnect, you can securely handle wallet connections within the `Swap Widget`, enhancing the user experience for token swaps.
+- **X-Verify(Ton Proof)**: is a secure mechanism for identity verification and user authentication through their `TON` wallet. It enables decentralized applications to confirm wallet ownership, ensuring trusted interactions for access control, voting, or other features requiring user validation.
+
+
+> You can learn more about **TonConnect** or **X-Verify(Ton Proof)** and its features here ([TonConnect](https://docs.ton.org/develop/dapps/ton-connect/developers), [X-Verify(TonProof)](https://docs.ton.org/develop/dapps/ton-connect/sign)).
+
+
+## How our swap.coffee widget works
+
+1. **Connect Your Wallet**:
+    - Start by connecting your wallet through TonConnect. This step allows the widget to interact with your wallet and manage your tokens securely.
+
+2. **Configure the Widget**:
+    - **Basic Settings**: customize essential parameters such as slippage tolerance. These settings help in determining the acceptable range for price changes during the swap.
+    - **Advanced Settings**: for more control, adjust expert settings including:
+        - Price Impact - Swap Widget will not let you perform a swap if the price impact is more than this percentage.
+        - Pools Volatility - You can exclude routes that use highly volatile (and therefore high-risk) pools.
+        - Parallel Transactions - You can set the maximum number of parallel transactions, which allows for build more profitable routes.
+        - Intermediate Tokens - You can configure the max number of intermediate tokens, thereby controlling the length of the route.
+
+3. **Select Tokens**:
+    - Choose the token you wish to exchange and the token you want to receive. This selection initiates the swap process.
+
+4. **Routing and Optimization**:
+    - The widget communicates with the swap.coffee API to retrieve a comprehensive routing scheme for your token swap. This includes details on which decentralized exchanges (DEXs) will be used and the chosen routes. This is where our unique routing system comes into play, optimizing the swap for the best possible rate and efficiency.
+
+5. **Confirm and Execute Transaction**:
+    - Review the transaction conditions and routing details provided. If satisfied, proceed by confirming the transaction.
+    - After initiating the transaction, an animated window will appear showing the status of the transaction. Once the transaction is successfully processed, this window will display a confirmation message along with a success animation and details about the exchange. You can then enjoy a seamless and efficient token exchange experience.
+
+## User Preferences
+
+The Swap Widget offers customization options for both themes and languages. Here’s a detailed overview:
+
+### 1. **Available Themes**
+
+The Swap Widget supports the following themes:
+
+- **`light`** - a light-themed interface designed for bright environments, providing a clean and minimalist appearance.
+- **`dark`** - a dark-themed interface suitable for low-light environments, offering a sleek, modern look.
+- **`coffee`** - a coffee-themed interface with a warm, earthy color scheme that provides a unique and cozy aesthetic.
+
+### 2. **Available Languages**
+
+The Swap Widget supports multiple languages to accommodate users from different regions. Currently available languages include:
+
+- **`zh`**: Chinese
+- **`ua`**: Ukrainian
+- **`ru`**: Russian
+- **`en`**: English
+- **`es`**: Spanish
+- **`fr`**: French
+- **`fa`**: Persian
+
+### 3. **Introduction to the createSwapWidget**
+
+To get started with the Swap Widget, you'll use the `createSwapWidget` function. This function is a core part of our SDK and is responsible for creating an instance of the Swap Widget within your application.
+
+**Function Overview**
+
+- **`createSwapWidget`** - initializes the Swap Widget and integrates it into your application. It takes a container element selector and a configuration object to customize the widget’s appearance and behavior.
+
+**Importing `createSwapWidget`**
+
+You can import the `createSwapWidget` function from our SDK package as follows:
+
+```typescript
+import { createSwapWidget } from '@swap-coffee/ui-sdk';
+```
+
+### 4. **Styling** (Optional)
+You can style only the **external container** of the widget, as internal styling is controlled by the widget's predefined themes. The available themes are:
+
+- **light**
+- **dark** (applied by default)
+- **coffee**:
+
+Custom styling options are limited to the external container, and the themes control the primary look and feel of the widget.
+
+Here’s an example of basic styling for the widget container:
+```css
+<style scoped>
+#swap-widget-component { // External container id example
+  margin: 0 auto;
+  width: 100%;
+  height: 500px;
+}
+
+</style>
+```
+
+
+
+## Types of Connection
+The `swap.coffee widget` offers two methods for connecting your application to our platform, tailored to different use cases and levels of complexity:
+
+---
+
+1. **TonConnect**
+> The **TonConnect** method is the simpler and more streamlined way to connect. If your application already supports **TonConnectUI** library, this is the recommended approach as it allows seamless integration with minimal configuration. **TonConnect** handles wallet authentication and transaction signing, making it ideal for projects that prioritize ease of use and compatibility with existing `TON` ecosystem wallets.
+
+2. **Payload-Based** Connection
+> For scenarios where **TonConnect** is unavailable or unsupported, the `swap.coffee widget` provides an alternative connection method through a custom `payload` mechanism. This approach eliminates the dependency on TonConnect, offering greater flexibility and ensuring compatibility in diverse environments. While slightly more complex, the `payload` method gives developers **full control** over authentication and **transaction processes**.
+
+---
+
+In the [**next section**](/technical-guides/aggregator-widget/configuration), we will guide you through configuring both connection methods step-by-step, ensuring that you can integrate the `Swap Widget` in the way that best suits your application's needs.

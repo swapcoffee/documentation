@@ -1,0 +1,187 @@
+---
+title: 'Staking Internals'
+icon: 'sparkles'
+---
+
+# Introduction
+
+This page describes overall architecture and possible interactions with staking protocol developed by **swap.coffee**.
+
+User-friendly interface is available at https://swap.coffee/stake, but this document is aiming at providing readers
+with technical insights, TL-B schemes and others associated complexities.
+
+At the time of writing this article, we only support staking protocol for our own product, but we also have plans and
+are in the process of implementation (by the time you read this, it's likely already implemented) to support staking
+protocol for partner products as well.
+
+# Architecture
+
+Staking protocol consists of 2 on-chain contracts: **Master** and **Vault**;
+integral off-chain backend that is responsible for rewards calciulation;
+and also interacts with **swap.coffee**'s rewards distribution system.
+
+## Master Contract
+
+**Master Contract** is used both for storing crucial data about protocol itself and
+keeping funds that are being distributed as a rewards.
+It is also fully compatible with NFT standard by supporting all related methods of NFT Collection.
+
+You may retrieve staking-related information by calling contract's get method `get_stored_data`, which returns:
+
+### 1. int `initialized`
+
+1 for true, 0 for false.
+
+### 2. slice `admin_address`
+
+### 3. slice `distributor_address`
+
+Technical wallet that is a part of **swap.coffee**'s rewards distribution system
+and which serves as a proxy point for users which want to claim their staking rewards.
+
+### 4. slice `vault_address`
+
+Address of a staking **Vault Contract** associated with this **Master Contract**.
+
+### 5. cell `state`
+
+Cell of the following format:
+```tl-b
+state total_points:Coins next_nft_id:uint64 = State;
+```
+
+### 6. cell `rewards`
+
+Contains information about the rewards that were (or being) distributed across all the users that
+participate(d) in staking.
+
+Cell is being represented as a cell-referencing dictionary, which can be read as follows:
+```func
+(cell data, int found) = rewards.udict_get_ref?(256, slice_hash(jetton_wallet));
+if (found) {
+  slice ds = data.begin_parse();
+  int duration = ds~load_uint(64);
+  int finish_at = ds~load_uint(64);
+  int started_at = finish_at - duration;
+  int reward_per_point = ds~load_coins();
+}
+```
+
+Every time this cell is updated, external out message is being generated:
+```tl-b
+notify_reward#0xa9577f0 query_id:uint64 jetton_wallet:MsgAddressInt duration:uint64 finish_at:uint64 reward_rate:Coins = NotifyReward;
+```
+
+In the message above, `reward_rate` is being calculated in one of the following ways:
+```func
+int update_time = now();
+if (update_time > previous_finish_at) {
+  reward_rate = reward_total_amount / duration;
+} else {
+  reward_rate = mul_add_div_mod_r(previous_finish_at - update_time, reward_per_point, reward_total_amount, duration);
+}
+```
+
+Simplified version of the code that allows you to calculate reward for specific staking position:
+```func
+int staking_position_points = 0; ;; fill with your value
+int staking_position_created_at = 0; ;; fill with your value
+int acquiring_at = now(); ;; fill with your value: time at which user decides to acquire his reward
+int reward_rate = 0; ;; must be retrieved by catching external out message
+int NORMALIZER = 1_000_000_000_000_000_000;
+
+if (staking_position_created_at < updated_at) {
+  ;; In real world things are a bit more complicated, because rewards distribution may be updated after
+  ;; users' staking positions were created. Internally there's a mechanism that handles such updates
+  ;; and recalculates every staking position's rewards accordingly.
+  return 0;
+}
+if (acquiring_time > finish_at) {
+  acquiring_time = finish_at;
+}
+int delta_time = acquiring_time - updated_at;
+return reward_rate * delta_time * NORMALIZER * staking_position_points / total_points;
+```
+
+### 7. cell `jettons`
+
+Unlike many other staking protocols, ours supports staking of not only one specific token, but of any
+(pre-defined by the protocol administrator) set of them. One of the purposes of the **Master Contract** is to be
+an entry point to retrieve list of such supported tokens, and this exact cell contains them.
+
+Cell is being represented as a cell-referencing dictionary, which can be read as follows:
+```func
+(cell data, int found) = jettons.udict_get_ref?(256, slice_hash(jetton_wallet));
+if (found) {
+  slice ds = data.begin_parse();
+  slice jetton_wallet = ds~load_msg_addr();
+  int jetton_normalizer = ds~load_coins();
+}
+```
+
+Only those jettons that are defined in this cell may be staked. Normalizer defines amount of points being accrued
+for staking one piece of this jetton.
+
+### 8. cell `periods`
+
+Investment of funds is possible only for one of the predetermined periods, which are stored in this exact cell.
+
+Cell is being represented as a cell-referencing dictionary, which can be read as follows:
+```func
+(cell data, int found) = periods.udict_get_ref?(32, period_id);
+if (found) {
+  slice ds = data.begin_parse();
+  int duration = ds~load_uint(64);
+  int percentage = ds~load_uint(64);
+}
+```
+
+For a given period, user final points may be calculated as:
+```func
+  int base_points = jetton_staked_amount * jetton_normalizer;
+  return mul_div_r(base_points, percentage, 100);
+```
+
+## Vault Contract
+
+This contract serves both as a storage for users' staked assets and as a proxy for users' interactions with
+the **Master Contract**.
+
+### Deposit
+
+New staking position may be created by sending jettons to the **Vault Contract** with specific `forward_payload`:
+```tl-b
+period period_id:uint32 = Period;
+transfer#f8a7ea5 query_id:uint64 amount:(VarUInteger 16) destination_address:MsgAddress response_address:MsgAddress custom_payload:(Maybe ^Cell) forward_amount:(VarUInteger 16) forward_payload:(Maybe ^Period) = Transfer;
+```
+
+After such action, if succeeded, users' assets will be held until he decides to withdraw them
+(after lock period expires), and NFT Item that corresponds to **Master Contract** as a NFT collection will be created
+and sent to the user who initiated this transaction.
+
+Example of full deposit transaction could be found [here](https://tonviewer.com/transaction/e25593795c06d898f2010761e910fdb1b9a63c6c3a1e431565e161412b05f758).
+
+### Withdraw
+
+Despite being written under **Vault Contract** section, withdrawal is performed by sending a specific transaction to
+the NFT Item user received after staking his jettons. Message's body looks as follows:
+```tl-b
+close_staking_position#0xcb03bfaf query_id:uint64 = CloseStakingPosition;
+```
+
+If everything is ok, there will be a chain of messages initiated by the NFT Item that will go through the
+**Master Contract** right to the **Vault Contract**, freeing user's assets.
+
+## Off-Chain Backend
+
+As briefly described before, our staking protocol hardly depends on the off-chain part that not only indexes blockchain
+in order to track all the users actions related to staking, but also allows us to integrate staking protocol into
+already existing **swap.coffee**'s rewards distribution system.
+
+This is a closed proprietary product, therefore there is not really much to write about it.
+Despite the fact that there are some interactions that users will encounter when using our staking protocol such as
+rewards claiming, we're not ready yet to provide in-depth details about it. But stay tuned and maybe in some future
+it will also appear on our documentation website :)
+
+
+

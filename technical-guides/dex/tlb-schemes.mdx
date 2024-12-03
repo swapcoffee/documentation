@@ -1,0 +1,822 @@
+---
+title: 'TL-B Schemes'
+icon: 'mailbox'
+---
+
+This page contains extensive information about custom entities used in communication with/in-between **swap.coffee DEX** contracts.
+
+## Types
+
+### AMM
+
+```tl-b
+volatile$000 = AMM;
+
+stable$001 = AMM;
+```
+
+Defines AMM strategy type of the pool.
+
+### DepositLiquidityCondition
+
+```tl-b
+none$00 = DepositLiquidityCondition;
+
+lp_quantity$01 min_lp_amount:Coins = DepositLiquidityCondition;
+
+reserves_ratio$10 denominator:uint16 min_nominator:uint16
+                  max_nominator:uint16 = DepositLiquidityCondition;
+
+complex$11 min_lp_amount:Coins denominator:uint16 min_nominator:uint16
+           max_nominator:uint16 = DepositLiquidityCondition;
+```
+
+Defines condition, which will be checked whenever contract receives liquidity deposition request.
+If it fails, transaction will be reverted.
+
+#### none
+
+Equivalent to no-condition.
+
+#### lp_quantity
+
+Allows to set minimum quantity of LP tokens you will get in return after liquidity deposition happens.
+If real quantity is lower than the given one, transaction will be reverted.
+
+#### reserves_ratio
+
+Allows to check pool reserves ratio before your liquidity deposition happens.
+In other words, all of the following formulas must be true:
+
+- `reserves1 / reserves2 >= min_nominator / denominator`
+- `reserves1 / reserves2 <= max_nominator / denominator`
+
+#### complex
+
+Just a combination of **none** and **reserves_ratio**.
+
+### Asset
+
+```tl-b
+native$00 = Asset;
+
+jetton$01 chain:uint8 hash:uint256 = Asset;
+
+extra$10 id:uint32 = Asset;
+```
+
+Defines asset type (and metadata) to work with.
+
+#### native
+
+Used for TONcoin.
+
+#### jetton
+
+Used for any jettons.
+
+#### extra
+
+Used for extra currencies.
+
+### PoolParams
+
+```tl-b
+pool_params first:Asset second:Asset amm:AMM = PoolParams;
+```
+
+Used to uniquely identify the pool. Only one pool can exist for given asset-pair and AMM type.
+
+### NotificationDataSingle
+
+```tl-b
+notification_data_single receiver:MsgAddressInt fwd_gas:Coins
+                         payload:^Cell = NotificationDataSingle;
+```
+
+Defines where to send (and with how much gas) custom payload for various actions within **DEX**.
+
+If `receiver` is none, it's considered being equal to transaction recipient.
+
+### NotificationData
+
+```tl-b
+notification_data on_success:(Maybe ^NotificationDataSingle)
+                  on_failure:(Maybe ^NotificationDataSingle) = NotificationData;
+```
+
+Defines how to handle notifications (custom payloads) in none of, one of or both scenarios of successful/failed execution.
+
+### PoolUpdateParams
+
+```tl-b
+pool_update_params flags:(## 3) amm_settings:flags.0?^Cell
+                   protocol_fee:flags.1?uint16 lp_fee:flags.1?uint16
+                   is_active:flags.2?uint1 = PoolUpdateParams;
+```
+
+Defines pool's parameters that may be updated by **DEX** administrator.
+
+### SwapParams
+
+```tl-b
+swap_params deadline:uint32 recipient:MsgAddressInt referral:MsgAddressInt
+            notification_data:(Maybe ^NotificationData) = SwapParams;
+```
+
+Defines parameters that are essential for all (multi-hop) steps of single swap transaction:
+
+| Property Name     | Meaning                                                                                                            |
+|-------------------|--------------------------------------------------------------------------------------------------------------------|
+| deadline          | Unix timestamp. If contract receives swap message after that time, transaction will be failed at that step         |
+| recipient         | Address to which funds must go after swap transaction is over (both in success/failure scenarios). Must be present |
+| referral          | Address to which referral fees will be accrued. If none, referral fees go to the protocol                          |
+| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)                                               |
+
+### SwapStepParams
+
+```tl-b
+swap_step_params pool_address_hash:uint256 min_output_amount:Coins
+                 next:(Maybe ^SwapStepParams) = SwapStepParams;
+```
+
+Defines parameters that are unique for every (multi-hop) step of swap transaction:
+
+| Property Name     | Meaning                                                                             |
+|-------------------|-------------------------------------------------------------------------------------|
+| pool_address_hash | Hash part of the pool's address                                                     |
+| min_output_amount | Minimum quantity of output asset to receive. If you get less, transaction will fail |
+| next              | Next swap-step if any                                                               |
+
+### SwapStepInternalParams
+
+```tl-b
+swap_step_internal_params previous_amount:Coins previous_asset_hint:(Maybe Asset)
+                          min_output_amount:Coins
+                          next:(Maybe ^SwapStepParams) = SwapStepInternalParams;
+```
+
+Same as [SwapStepParams](#SwapStepParams), but is being used in inter-contract communication.
+
+| Property Name       | Meaning                                                                                                                                                                                  |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| previous_amount     | Amount of asset you received on the previous swap-step                                                                                                                                   |
+| previous_asset_hint | Asset you received on the previous swap-step. It's present only in cases when user tries to perform sequential swaps on pools of the same asset-pairs (but probably different AMM types) |
+| min_output_amount   | Minimum quantity of output asset to receive. If you get less, transaction will fail                                                                                                      |
+| next                | Next swap-step if any                                                                                                                                                                    |
+
+### SwapGenericFee
+
+```tl-b
+swap_generic_fee input_amount:Coins output_amount:Coins = SwapGenericFee;
+```
+
+Defines how much fees were collected from already performed swap.
+
+### SwapReferralFee
+
+```tl-b
+swap_referral_fee referral:MsgAddressInt input_amount:Coins
+                  output_amount:Coins = SwapReferralFee;
+```
+
+Defines how much fees were collected from already performed swap to the specified referral.
+
+### SwapFees
+
+```tl-b
+swap_fees lp:SwapGenericFee protocol:SwapGenericFee
+          referral:(Maybe ^SwapReferralFee) = SwapFees;
+```
+
+Defines how much fees were collected from already performed swap in total.
+
+| Property Name | Meaning                                                                                                                   |
+|---------------|---------------------------------------------------------------------------------------------------------------------------|
+| lp            | Fees for liquidity providers (they remain in pool reserves indefinitely)                                                  |
+| protocol      | Fees for the protocol (they remain in pool reserves temporary, but will be withdrawn at some point in the future)         |
+| referral      | Fees for the referral, if any (they remain in pool reserves temporary, but will be withdrawn at some point in the future) |
+
+### PoolReserves
+
+```tl-b
+pool_reserves input_reserve:Coins output_reserve:Coins = PoolReserves;
+```
+
+Defines reserves of the pool.
+
+### DepositLiquidityParamsTrimmed
+
+```tl-b
+deposit_liquidity_params_trimmed recipient:MsgAddressInt referral:MsgAddressInt
+                                 deadline:uint32 condition:DepositLiquidityCondition
+                                 notification_data:(Maybe ^NotificationData)
+= DepositLiquidityParamsTrimmed;
+```
+
+Defines parameters required for liquidity provisioning.
+This exact entity is being used in inter-contract communication and lacks some of extra information (see below).
+
+| Property Name     | Meaning                                                                                                                               |
+|-------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| recipient         | Address to which LP tokens must go after transaction succeed (or to which funds must return in failure scenario). Must be present     |
+| referral          | Referral address used exclusively for analytical purposes. No fees or any kind or rewards will be given                               |
+| deadline          | Unix timestamp. If contract receives liquidity provisioning message after that time, transaction will be failed at that step          |
+| condition         | Used to protect the liquidity provider from unfavorable pool conditions. See: [DepositLiquidityCondition](#depositliquiditycondition) |
+| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)                                                                  |
+
+### DepositLiquidityParams
+
+```tl-b
+deposit_liquidity_params params:^DepositLiquidityParamsTrimmed
+                         pool_params:^PoolParams = DepositLiquidityParams;
+```
+
+Extended version of the previous one. Pool parameters are used to identify the pool.
+
+### ContractUpdate
+
+```tl-b
+contract_update code:(Maybe ^Cell) data:(Maybe ^Cell) = ContractUpdate;
+```
+
+Entity used in administrative action of contract updates.
+
+## Messages
+
+### Related to swaps
+
+#### SwapNative
+
+```tl-b
+swap_native#c0ffee00 query_id:uint64 amount:Coins _:SwapStepParams
+                     params:^SwapParams = SwapNative;
+```
+
+Must be sent by user to the **Native Vault** to initiate swap transaction.
+
+| Property Name | Meaning                                                                                                                                                                   |
+|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| query_id      | Non-unique identifier which you may specify to track this transaction                                                                                                     |
+| amount        | Amount of TONs to swap. Must be lower than the message value of TONs (because extra TONs will be used to pay for gas, and will be returned at the end of the transaction) |
+| _             | Parameters for the first swap-step of the transaction. See: [SwapStepParams](#swapstepparams)                                                                             |
+| params        | Parameters that are essential for all steps of the swap transaction. See: [SwapParams](#swapparams)                                                                       |
+
+#### SwapJetton
+
+```tl-b
+swap_jetton#c0ffee10 _:SwapStepParams params:^SwapParams = SwapJetton;
+```
+
+Must be sent by user to the corresponding **Jetton Vault** as a custom payload of a jetton-transfer message to initiate swap transaction.
+
+Query ID, jetton and it's amount are being determined internally from jetton transfer notification and therefore mustn't be present here.
+
+| Property Name | Meaning                                                                                                                                                                   |
+|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| _             | Parameters for the first swap-step of the transaction. See: [SwapStepParams](#swapstepparams)                                                                             |
+| params        | Parameters that are essential for all steps of the swap transaction. See: [SwapParams](#swapparams)                                                                       |
+
+#### SwapExtra
+
+```tl-b
+swap_extra#c0ffee01 query_id:uint64 _:SwapStepParams params:^SwapParams = SwapExtra;
+```
+
+Must be sent by user to the corresponding **Extra-Currency Vault** to initiate swap transaction.
+
+Extra-currency and it's amount are being determined internally from the vault type and extra-currencies dictionary within the message.
+
+| Property Name | Meaning                                                                                                                                                                   |
+|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| query_id      | Non-unique identifier which you may specify to track this transaction                                                                                                     |
+| _             | Parameters for the first swap-step of the transaction. See: [SwapStepParams](#swapstepparams)                                                                             |
+| params        | Parameters that are essential for all steps of the swap transaction. See: [SwapParams](#swapparams)                                                                       |
+
+#### SwapSuccessfulEvent
+
+```tl-b
+swap_successful_event#c0ffee30 query_id:uint64 input:Asset input_amount:Coins
+                               output_amount:Coins reserves:^PoolReserves
+                               fees:^SwapFees = SwapSuccessfulEvent;
+```
+
+Is being sent by the pool as an external outgoing message whenever swap step completes successfully.
+
+This message occurs **after** payout is guaranteed to happen, but **before** it actually happens.
+
+| Property Name | Meaning                                                                                                                               |
+|---------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| query_id      | Propagated identifier                                                                                                                 |
+| input         | Input (given) asset of the swap operation. There is no output asset property, but it may be determined from the pool address and data |
+| input_amount  | Amount of input (given) asset of the swap operation                                                                                   |
+| output_amount | Amount of output (received) asset of the swap operation                                                                               |
+| reserves      | Pool's reserves at the moment swap happened                                                                                           |
+| fees          | Information about fees that were collected with this swap operation                                                                   |
+
+#### SwapFailedEvent
+
+```tl-b
+swap_failed_event#c0ffee31 query_id:uint64 input:Asset input_amount:Coins
+                           reserves:(Maybe ^PoolReserves) = SwapFailedEvent;
+```
+
+Is being sent by the pool as an external outgoing message whenever swap step completes badly (i.e. it was slippage tolerated or deadline exceeded).
+
+This message occurs **after** payout (of the input asset) is guaranteed to happen, but **before** it actually happens.
+
+Despite the fact that message itself does not contain failure reason, it may be determined as an exit code of the TVM.
+
+| Property Name | Meaning                                                                                                                                        |
+|---------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| query_id      | Propagated identifier                                                                                                                          |
+| input         | Input (given) asset of the swap operation. There is no output asset property, but it may be determined from the pool address and data          |
+| input_amount  | Amount of input (given) asset of the swap operation                                                                                            |
+| reserves      | Information about pool's reserves at a time it tries to execute this transaction. Guaranteed to be present to slippage-tolerated failures only |
+
+### Related to pools creation and liquidity provisioning
+
+#### CreatePoolNative
+
+```tl-b
+create_pool_native#c0ffee02 query_id:uint64 amount:Coins params:PoolParams
+                            amm_settings:(Maybe ^Cell)
+                            notification_data:(Maybe ^NotificationData)
+= CreatePoolNative;
+```
+
+Must be sent by user to the **Native Vault** as a part of pool creation (and it's initial liquidity provisioning).
+
+| Property Name     | Meaning                                                                                                                                                                                     |
+|-------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| query_id          | Non-unique identifier which you may specify to track this transaction                                                                                                                       |
+| amount            | Amount of TONs to deposit into liquidity. Must be lower than the message value of TONs (because extra TONs will be used to pay for gas, and will be returned at the end of the transaction) |
+| params            | Parameters used to uniquely identify the pool. See: [PoolParams](#poolparams)                                                                                                               |
+| amm_settings      | Cell of AMM settings. Must be set for those AMMs that require it                                                                                                                            |
+| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)                                                                                                                        |
+
+#### CreatePoolJetton
+
+```tl-b
+create_pool_jetton#c0ffee11 params:PoolParams amm_settings:(Maybe ^Cell)
+                            notification_data:(Maybe ^NotificationData)
+= CreatePoolJetton;
+```
+
+Must be sent by user to the corresponding **Jetton Vault** as a part of pool creation (and it's initial liquidity provisioning).
+This message must be included as a custom payload to the jetton-transfer message.
+
+Query ID, jetton and it's amount are being determined internally from jetton transfer notification and therefore mustn't be present here.
+
+| Property Name     | Meaning                                                                       |
+|-------------------|-------------------------------------------------------------------------------|
+| params            | Parameters used to uniquely identify the pool. See: [PoolParams](#poolparams) |
+| amm_settings      | Cell of AMM settings. Must be set for those AMMs that require it              |
+| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)          |
+
+#### CreatePoolExtra
+
+```tl-b
+create_pool_extra#c0ffee03 query_id:uint64 params:PoolParams
+                           amm_settings:(Maybe ^Cell)
+                           notification_data:(Maybe ^NotificationData)
+= CreatePoolExtra;
+```
+
+Must be sent by user to the corresponding **Extra-Currency Vault** as a part of pool creation (and it's initial liquidity provisioning).
+
+Extra-currency and it's amount are being determined internally from the vault type and extra-currencies dictionary within the message.
+
+| Property Name     | Meaning                                                                       |
+|-------------------|-------------------------------------------------------------------------------|
+| query_id          | Non-unique identifier which you may specify to track this transaction         |
+| params            | Parameters used to uniquely identify the pool. See: [PoolParams](#poolparams) |
+| amm_settings      | Cell of AMM settings. Must be set for those AMMs that require it              |
+| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)          |
+
+#### DepositLiquidityNative
+
+```tl-b
+deposit_liquidity_native#c0ffee04 query_id:uint64 amount:Coins
+                                  params:DepositLiquidityParams
+= DepositLiquidityNative;
+```
+
+Must be sent by user to the **Native Vault** as a part of liquidity provisioning process.
+
+| Property Name | Meaning                                                                                                                                                                                     |
+|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| query_id      | Non-unique identifier which you may specify to track this transaction                                                                                                                       |
+| amount        | Amount of TONs to deposit into liquidity. Must be lower than the message value of TONs (because extra TONs will be used to pay for gas, and will be returned at the end of the transaction) |
+| params        | Parameters used for liquidity provisioning. See: [DepositLiquidityParams](#depositliquidityparams)                                                                                          |
+
+#### DepositLiquidityJetton
+
+```tl-b
+deposit_liquidity_jetton#c0ffee12 params:DepositLiquidityParams
+= DepositLiquidityJetton;
+```
+
+Must be sent by user to the corresponding **Jetton Vault** as a part of liquidity provisioning process.
+This message must be included as a custom payload to the jetton-transfer message.
+
+Query ID, jetton and it's amount are being determined internally from jetton transfer notification and therefore mustn't be present here.
+
+| Property Name | Meaning                                                                                            |
+|---------------|----------------------------------------------------------------------------------------------------|
+| params        | Parameters used for liquidity provisioning. See: [DepositLiquidityParams](#depositliquidityparams) |
+
+#### DepositLiquidityExtra
+
+```tl-b
+deposit_liquidity_extra#c0ffee05 query_id:uint64 params:DepositLiquidityParams
+= DepositLiquidityExtra;
+```
+
+Must be sent by user to the corresponding **Extra-Currency Vault** as a part of liquidity provisioning process.
+
+Extra-currency and it's amount are being determined internally from the vault type and extra-currencies dictionary within the message.
+
+| Property Name | Meaning                                                                                            |
+|---------------|----------------------------------------------------------------------------------------------------|
+| query_id      | Non-unique identifier which you may specify to track this transaction                              |
+| params        | Parameters used for liquidity provisioning. See: [DepositLiquidityParams](#depositliquidityparams) |
+
+#### DepositLiquiditySuccessfulEvent
+
+```tl-b
+deposit_liquidity_successful_event#c0ffee33 query_id:uint64 amount1:Coins
+                                            amount2:Coins lp_amount:Coins
+                                            total_supply:PoolReserves
+                                            reserves:PoolReserves
+= DepositLiquiditySuccessfulEvent;
+```
+
+Is being sent by the pool as an external outgoing message whenever liquidity provisioning step completes successfully.
+
+This message occurs **after** LP tokens payout is guaranteed to happen, but **before** it actually happens.
+
+| Property Name | Meaning                                                                         |
+|---------------|---------------------------------------------------------------------------------|
+| query_id      | Propagated identifier                                                           |
+| amount1       | Amount of pool's first asset that were used for the liquidity provisioning      |
+| amount2       | Amount of pool's second asset that were used for the liquidity provisioning     |
+| lp_amount     | Amount of LP tokens user received as a result of this liquidity provisioning    |
+| total_supply  | Information about how pool's LP tokens total supply changed with this operation |
+| reserves      | Pool's reserves at the moment this operation happened                           |
+
+#### DepositLiquidityFailedEvent
+
+```tl-b
+deposit_liquidity_failed_event#c0ffee34 query_id:uint64 amount1:Coins
+                                        amount2:Coins min_lp_amount:Coins
+                                        total_supply:Coins reserves:PoolReserves
+= DepositLiquidityFailedEvent;
+```
+
+Is being sent by the pool as an external outgoing message whenever liquidity provisioning step completes badly (i.e. it's condition check failed or deadline exceeded).
+
+This message occurs **after** payout (of provided assets) is guaranteed to happen, but **before** it actually happens.
+
+Despite the fact that message itself does not contain failure reason, it may be determined as an exit code of the TVM.
+
+| Property Name | Meaning                                                                                 |
+|---------------|-----------------------------------------------------------------------------------------|
+| query_id      | Propagated identifier                                                                   |
+| amount1       | Amount of pool's first asset that were about to be used for the liquidity provisioning  |
+| amount2       | Amount of pool's second asset that were about to be used for the liquidity provisioning |
+| min_lp_amount | Minimum amount of LP tokens user was asking for                                         |
+| total_supply  | Total supply of LP tokens at the moment this liquidity provisioning was about to happen |
+| reserves      | Pool's reserves at the moment this liquidity provisioning was about to happen           |
+
+#### LiquidityWithdrawalEvent
+
+```tl-b
+liquidity_withdrawal_event#c0ffee35 query_id:uint64 amount1:Coins amount2:Coins
+                                    lp_amount:Coins total_supply:PoolReserves
+                                    reserves:PoolReserves
+= LiquidityWithdrawalEvent;
+```
+
+Is being sent by the pool as an external outgoing message whenever somebody withdraws previously provided liquidity.
+
+This message occurs **after** payout is guaranteed to happen, but **before** it actually happens.
+
+| Property Name | Meaning                                                                         |
+|---------------|---------------------------------------------------------------------------------|
+| query_id      | Propagated identifier                                                           |
+| amount1       | Amount of pool's first asset that will be sent to the user                      |
+| amount2       | Amount of pool's second asset that will be sent to the user                     |
+| lp_amount     | Amount of LP tokens being burnt                                                 |
+| total_supply  | Information about how pool's LP tokens total supply changed with this operation |
+| reserves      | Pool's reserves at the moment this operation happened                           |
+
+#### WithdrawDeposit
+
+```tl-b
+withdraw_deposit#c0ffee07 query_id:uint64 = WithdrawDeposit;
+```
+
+Must be sent by the user to the **PoolCreator** or **LiquidityDepository** if only one of 2 liquidity provisioning
+transactions succeeded and user decides to cancel previously initiated process.
+As a result of this message execution, all half-way deposited funds will be returned back to the user.
+
+### Miscellaneous
+
+#### Payout
+
+```tl-b
+payout#c0ffee32 query_id:uint64 = Payout;
+```
+
+Is being sent by the **Native Vault** and **Extra-Currency Vaults** in **some** cases. Specifically, it occurs if:
+
+- Operation was initiated without notifications (custom payloads)
+- Operation was initiated with notification, but it's recipient differs from the wallet that receives funds
+
+It means that in a situation when operation was initiated with notification, but it's recipient is the same
+as the one who receives funds, this message won't be created.
+
+#### CreateVault
+
+```tl-b
+create_vault#c0ffee06 query_id:uint64 asset:Asset = CreateVault;
+```
+
+Must be sent by a user to the **Factory** in order to create new vault.
+
+| Property Name | Meaning                                                               |
+|---------------|-----------------------------------------------------------------------|
+| query_id      | Non-unique identifier which you may specify to track this transaction |
+| asset         | Asset for which new vault must be created                             |
+
+### Inter-contract communication
+
+#### SwapInternal
+
+```tl-b
+swap_internal#c0ffee20 query_id:uint64 _:SwapStepInternalParams params:^SwapParams
+                       proof:^Cell = SwapInternal;
+```
+
+For any first step of swap transaction, this message will be sent from **Vaults** to the **Pool**.
+For any intermediate steps of swap transaction, it will be sent from one **Pool** to another.
+
+| Property Name | Meaning                                                               |
+|---------------|-----------------------------------------------------------------------|
+| query_id      | Propagated identifier                                                 |
+| _             | Parameters of the current swap step                                   |
+| params        | Parameters which are essential for all steps of this swap transaction |
+| proof         | Special cell constructed for securing inter-contract communication    |
+
+#### PayoutInternal
+
+```tl-b
+payout_internal#c0ffee21 query_id:uint64 recipient:MsgAddressInt amount:Coins
+                         notification_data:(Maybe ^NotificationDataSingle)
+                         proof:(Maybe ^Cell) = PayoutInternal;
+```
+
+Is being sent by **Pools** to the **Vaults** every time **Pool** decides that a payment must happen.
+
+Keep in mind that there's no asset defined in the message, because it can be determined by the **Vault** data.
+
+| Property Name     | Meaning                                                              |
+|-------------------|----------------------------------------------------------------------|
+| query_id          | Propagated identifier                                                |
+| recipient         | Address of the one who will receive funds                            |
+| amount            | Amount of asset to be sent to the recipient                          |
+| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata) |
+| proof             | Special cell constructed for securing inter-contract communication   |
+
+#### Deploy
+
+```tl-b
+deploy#c0ffee22 code:^Cell data:^Cell action:(Maybe ^Cell) = Deploy;
+```
+
+Is being sent by **Factory** every time it decides to deploy a new contract.
+
+| Property Name | Meaning                                                               |
+|---------------|-----------------------------------------------------------------------|
+| code          | Code of the contract                                                  |
+| data          | Data of the contract                                                  |
+| action        | Optional code cell that must be invoked after contract initialization |
+
+#### CreatePoolCreatorRequest
+
+```tl-b
+create_pool_creator_request#c0ffee23 query_id:uint64 amount:Coins params:^PoolParams
+                                     amm_settings:(Maybe ^Cell)
+                                     recipient:MsgAddressInt
+                                     notification_data:(Maybe ^NotificationData)
+                                     proof:^Cell = CreatePoolCreatorRequest;
+```
+
+Is being sent by **Vaults** to the **Factory** at the moment somebody tries to create new pool.
+
+Keep in mind that there's no asset defined in the message, because it can be determined by the **Vault** data.
+
+| Property Name     | Meaning                                                                         |
+|-------------------|---------------------------------------------------------------------------------|
+| query_id          | Propagated identifier                                                           |
+| amount            | Amount of this vault's asset user provided as an initial liquidity for the pool |
+| params            | Parameters to uniquely identify the pool to be created                          |
+| amm_settings      | Cell of AMM settings. Must be set for those AMMs that require it                |
+| recipient         | Address of the one who will receive LP tokens                                   |
+| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)            |
+| proof             | Special cell constructed for securing inter-contract communication              |
+
+#### CreatePoolCreatorInternal
+
+```tl-b
+create_pool_creator_internal#c0ffee24 query_id:uint64 asset:Asset amm:AMM
+                                      amm_settings:(Maybe ^Cell) amount:Coins
+                                      recipient:MsgAddressInt
+                                      notification_data:(Maybe ^NotificationData)
+= CreatePoolCreatorInternal;
+```
+
+Is being sent by the **Factory** whenever it's about to deploy new **PoolCreator**.
+
+Properties are pretty much the same with [CreatePoolCreatorRequest](#createpoolcreatorrequest).
+
+#### CreatePoolRequest
+
+```tl-b
+create_pool_request#c0ffee25 query_id:uint64 amount1:Coins amount2:Coins
+                             recipient:MsgAddressInt amm_settings:(Maybe ^Cell)
+                             notification_data:(Maybe ^NotificationData)
+                             proof:^Cell = CreatePoolRequest;
+```
+
+Is being sent by the **PoolCreator** to the **Factory** when it's time the uninitialize **PoolCreator** and deploy a **Pool**.
+
+Properties are pretty much the same with [CreatePoolCreatorRequest](#createpoolcreatorrequest).
+
+#### CreatePoolInternal
+
+```tl-b
+create_pool_internal#c0ffee26 query_id:uint64 amount1:Coins amount2:Coins
+                              recipient:MsgAddressInt
+                              notification_data:(Maybe ^NotificationData)
+= CreatePoolInternal;
+```
+
+Is being sent by the **Factory** whenever it's about to deploy new **Pool**.
+
+Properties are pretty much the same with [CreatePoolCreatorRequest](#createpoolcreatorrequest).
+
+#### CreateLiquidityDepositoryRequest
+
+```tl-b
+create_liquidity_depository_request#c0ffee27 query_id:uint64 amount:Coins
+                                             params:DepositLiquidityParams
+                                             proof:^Cell
+= CreateLiquidityDepositoryRequest;
+```
+
+Is being sent by **Vaults** to the **Factory** at the moment somebody tries to deposit liquidity to some pool.
+
+Keep in mind that there's no asset defined in the message, because it can be determined by the **Vault** data.
+
+| Property Name | Meaning                                                                                      |
+|---------------|----------------------------------------------------------------------------------------------|
+| query_id      | Propagated identifier                                                                        |
+| amount        | Amount of this vault's asset user provided as a liquidity for the pool                       |
+| params        | Parameters for liquidity provisioning. See [DepositLiquidityParams](#depositliquidityparams) |
+| proof         | Special cell constructed for securing inter-contract communication                           |
+
+#### CreateLiquidityDepositoryInternal
+
+```tl-b
+create_liquidity_depository_internal#c0ffee28 query_id:uint64 asset:Asset amm:AMM
+                                              amount:Coins
+                                              params:^DepositLiquidityParamsTrimmed
+= CreateLiquidityDepositoryInternal;
+```
+
+Is being sent by the **Factory** whenever it's about to deploy new **LiquidityDepository**.
+
+Properties are pretty much the same with [CreateLiquidityDepositoryRequest](#createliquiditydepositoryrequest).
+
+#### DepositLiquidityInternal
+
+```tl-b
+deposit_liquidity_internal#c0ffee29 query_id:uint64 amount1:Coins amount2:Coins
+                                    params:^DepositLiquidityParamsTrimmed
+                                    proof:^Cell = DepositLiquidityInternal;
+```
+
+Is being sent by the **LiquidityDepository** to the **Pool** when it's time to uninitialize **LiquidityDepository**
+and execute liquidity provisioning on the **Pool** side.
+
+Properties are pretty much the same with [CreateLiquidityDepositoryRequest](#createliquiditydepositoryrequest).
+
+#### CreateVaultInternal
+
+```tl-b
+create_vault_internal#c0ffee2a query_id:uint64 = CreateVaultInternal;
+```
+
+Is being sent by the **Factory** whenever it's about to deploy new **Vault**.
+
+#### UpdatePoolInternal
+
+```tl-b
+update_pool_internal#c0ffee2b query_id:uint64 excesses_receiver:MsgAddressInt
+                              params:^PoolUpdateParams = UpdatePoolInternal;
+```
+
+Is being sent by the **Factory** to the **Pool** whenever it receives administrative request to do so.
+
+#### ActivateVaultInternal
+
+```tl-b
+activate_vault_internal#c0ffee2c query_id:uint64
+                                 wallet:MsgAddressInt = ActivateVaultInternal;
+```
+
+Is being sent by the **Factory** to the **Vault** whenever it receives administrative request to do so.
+
+When **Factory** creates new **Jetton Vault**, it internally initiates process of determining it's own jetton wallet's address.
+It is required to ensure security later on, but unfortunately in order to obtain that address **Jetton Vault** needs
+to ask **Jetton Master** for it. Not all **Jetton Masters** support such thing on-chain, therefore for some older jettons
+administrative affection is required.
+
+#### UpdateContractInternal
+
+```tl-b
+update_contract_internal#c0ffee2d query_id:uint64 excesses_receiver:MsgAddressInt
+                                  _:ContractUpdate = UpdateContractInternal;
+```
+
+Is being sent by the **Factory** to any **DEX** contract whenever it receives administrative request to do so.
+
+### Administrative
+
+#### UpdateAdmin
+
+```tl-b
+update_admin#c0ffee40 query_id:uint64 address:MsgAddressInt = UpdateAdmin;
+```
+
+Must be sent from the administrative wallet to the **Factory** in order to update administrative wallet's address.
+
+#### UpdatePool
+
+```tl-b
+update_pool#c0ffee41 query_id:uint64 pool_params:PoolParams
+                     params:^PoolUpdateParams = UpdatePool;
+```
+
+Must be sent from the administrative wallet to the **Factory** in order to update parameters of the pool.
+
+#### ActivateVault
+
+```tl-b
+activate_vault#c0ffee42 query_id:uint64 asset:Asset
+                        wallet:MsgAddressInt = ActivateVault;
+```
+
+Must be sent from the administrative wallet to the **Factory** in order to activate some **Jetton Vault**.
+
+#### Withdraw
+
+```tl-b
+withdraw#c0ffee43 query_id:uint64 asset:Asset amount:Coins
+                  receiver:MsgAddressInt = Withdraw;
+```
+
+Must be sent from the withdrawer wallet to the **Factory** in order to withdraw some assets.
+
+Used to withdraw protocol and referral fees: they are not distributed (nor calculated) on-chain,
+because it will lead to significantly higher gas consumption for end-users.
+
+#### UpdateCodeCell
+
+```tl-b
+update_code_cell#c0ffee44 query_id:uint64 code_cell:^Cell = UpdateCodeCell;
+```
+
+Must be sent from the administrative wallet to the **Factory** in order to update code cells of all the contracts
+that will be deployed by the **Factory** in the future.
+
+#### UpdateContract
+
+```tl-b
+update_contract#c0ffee45 query_id:uint64 contract_address:MsgAddressInt
+                         _:ContractUpdate = UpdateContract;
+```
+
+Must be sent from the administrative wallet to the **Factory** in order to update already existing contract.
+
+`contract_address` must be none in case of administrator wanting to upgrade the **Factory** itself.
+
+#### UpdateWithdrawer
+
+```tl-b
+update_withdrawer#c0ffee46 query_id:uint64 address:MsgAddressInt = UpdateWithdrawer;
+```
+
+Must be sent from the administrative wallet to the **Factory** in order to update withdrawer wallet's address.

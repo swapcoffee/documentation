@@ -1,0 +1,328 @@
+---
+title: 'Widget Configuration'
+description: 'Widget configuration and all about configuration for two connection methods'
+icon: 'gear'
+---
+
+
+## Configure Swap Widget with TonConnectUI
+
+To integrate our Swap Widget into your application , follow these steps to configure and set up the widget using the `@swap-coffee/ui-sdk` and `@tonconnect/ui`.
+
+### 1. **Create a Configuration File**
+
+First, create a configuration file to manage your settings for `TonConnect` and the Swap Widget. This file will include the `manifestUrl` for the TonConnect manifest and other configuration parameters.
+
+Here’s an example configuration file named `config.js`:
+
+```javascript
+import { THEME } from "@tonconnect/ui";
+
+// TonConnect manifest URL
+const manifestUrl = "https://swap.coffee/tonconnect-manifest.json";
+
+// TonConnect configuration
+export const tonConnectConfig = {
+    /**
+     * The URL of the TonConnect manifest file.
+     * This manifest provides details about the TonConnect application and its settings.
+     * This URL should point to a JSON file located in the public folder of your project.
+     *
+     * @type {string}
+     */
+    manifestUrl: manifestUrl,
+
+    /**
+     * User interface preferences for TonConnect.
+     * This allows customization of the appearance of the TonConnect UI.
+     *
+     * @type {Object}
+     * @property {string} theme - The theme of the TonConnect UI. Values include 'DARK' and 'LIGHT'.
+     */
+    uiPreferences: {
+        theme: THEME.DARK
+    },
+};
+
+// Swap Widget configuration
+export const swapWidgetConfig = {
+    /**
+     * Theme setting for the Swap Widget.
+     * Determines the visual style of the widget.
+     *
+     * @type {string}
+     */
+    theme: 'dark',
+
+    /**
+     * The connection method used for integrating the Swap Widget.
+     * Defines how the widget interacts with the wallet for transactions.
+     *
+     * Options:
+     * - 'tonConnect' (most common): Uses TonConnect for seamless wallet integration.
+     * - 'payload': A custom method that bypasses TonConnect and requires manual payload configuration for wallet interactions.
+     *
+     * @type {string}
+     */
+    injectionMode: 'tonConnect',
+
+    /**
+     * Locale setting for the Swap Widget.
+     * Defines the language and regional settings for the widget.
+     *
+     * @type {string}
+     */
+    locale: 'en',
+
+    /**
+     * Configuration for TonConnect manifest in the Swap Widget.
+     * This setting tells the widget where to find the TonConnect manifest.
+     *
+     * @type {Object}
+     * @property {string} url - The URL of the TonConnect manifest.
+     */
+    tonConnectManifest: {
+        url: manifestUrl
+    }
+};
+```
+
+This configuration file allows you to customize both the TonConnect UI and the Swap Widget. Make sure that the manifestUrl points to the correct location of the TonConnect manifest file in your public folder to ensure proper integration and functionality.
+
+### 2. createSwapWidget properties (via TonConnect injection mode)
+
+When using the **TonConnect** injection mode, the `createSwapWidget` function accepts several configuration properties that allow you to customize the widget's appearance, behavior, and connection settings.
+
+---
+
+####  **Container Selector** (`string`):
+- The CSS selector for the HTML element where the Swap Widget will be rendered.
+> **Example**: `'#swap-widget-component'`
+
+####  **Configuration Object** (`object`):
+This object contains the settings to customize the Swap Widget:
+
+- **`theme`** (`string`): Defines the visual theme of the widget.
+> **Options**: `'light'`, `'dark'`, `'coffee'`
+
+- **`locale`** (`string`): Specifies the language and regional settings for the widget.
+> **Options**: `'zh'`, `'ua'`, `'ru'`, `'en'`, `'es'`, `'fr'`, `'fa'`
+
+- **`tonConnectManifest`** (`object`): Configuration for the TonConnect manifest.
+    - **`url`** (`string`): The URL pointing to the TonConnect manifest. This manifest contains details about the TonConnect application and its settings.
+
+- **`tonConnectUi`** (`TonConnectUI instance`): An instance of `TonConnectUI` for managing wallet connections and interactions.
+
+####  **`injectionMode`** (`string`):
+- Specifies the connection method to be used for wallet interactions.
+> **Example**: `'tonConnect'`
+
+---
+
+### 3. createSwapWidget usage
+
+```typescript
+import { createSwapWidget } from '@swap-coffee/ui-sdk';
+import { TonConnectUI } from '@tonconnect/ui';
+import { swapWidgetConfig } from './config'; // Configuration file
+
+createSwapWidget('#swap-widget-component', {
+    // Provide the container selector where the Swap Widget will be rendered
+    ...swapWidgetConfig,  // Spread the existing Swap Widget configuration
+
+    // Pass the initialized TonConnectUI instance for TonConnect integration
+    tonConnectUi: tonConnectUiInstance,
+});
+```
+
+## Configure Swap Widget with Payload Injection
+
+To integrate our Swap Widget into your application, follow these steps to configure and set up the widget using the `@swap-coffee/ui-sdk` with **Payload Injection Mode**.
+
+### 1. **Create a Configuration File**
+
+First, create a configuration file to manage your settings for the Swap Widget. This file will include the configuration parameters required for the Payload connection method.
+
+Here’s an example configuration file named `config.js`:
+
+```typescript
+// Swap Widget configuration
+export const swapWidgetConfig = {
+    /**
+     * Theme setting for the Swap Widget.
+     * Determines the visual style of the widget.
+     *
+     * @type {string}
+     */
+    theme: 'dark',
+
+    /**
+     * The connection method used for integrating the Swap Widget.
+     * Defines how the widget interacts with the wallet for transactions.
+     *
+     * Options:
+     * - 'tonConnect' (most common): Uses TonConnect for seamless wallet integration.
+     * - 'payload': A custom method that bypasses TonConnect and requires manual payload configuration for wallet interactions.
+     *
+     * @type {string}
+     */
+    injectionMode: 'payload',
+
+    /**
+     * Locale setting for the Swap Widget.
+     * Defines the language and regional settings for the widget.
+     *
+     * @type {string}
+     */
+    locale: 'en',
+};
+```
+
+This configuration file allows you to customize the `Payload Injection Mode` for the **Swap Widget**. The `injectionMode` parameter is set to `'payload'`, indicating that the widget will **bypass TonConnect** and use a custom method for handling wallet interactions.
+
+---
+
+### 2. `Payload` Connection Configuration Structure for `Swap Widget`
+
+
+To configure the `Payload` connection for the `swap.coffee widget`, you need to define the `payload` object. This object contains all necessary parameters for establishing a manual wallet connection.
+
+> Here is an example configuration (`payload.js`):
+
+```typescript
+export const payloadConnectionExampleConfig = {
+     /**
+     * The wallet's metadata that is used to authenticate the wallet connection.
+     * This includes the wallet address and the relevant signatures for secure communication.
+     *
+     * @type {object}
+     */
+    wallet_meta: {
+        /**
+         * The address of the wallet, which is used for identifying the wallet in the transaction.
+         *
+         * @type {string}
+         * @example "0:e82b785a9f11c271ce0418a921aa3fa255a98f6cff88be610b8ce2df66ed3ba6"
+         */
+        address: "0:e82b785a9f11c271ce0418a921aa3fa255a98f6cff88be610b8ce2df66ed3ba6",
+    },
+
+    /**
+     * The verification data required for confirming the wallet connection.
+     * This object contains the public key and the wallet's state initialization data,
+     * along with a proof signature to ensure secure communication.
+     *
+     * @type {object}
+     */
+    verify: {
+        /**
+         * The public key of the wallet. This is used to authenticate the wallet in the connection process.
+         *
+         * @type {string}
+         * @example "a4e1e6811b634985c82132c636fc7fbfef831bbfcf1593dc35f8291fe2c4af2c"
+         */
+        public_key: "a4e1e6811b634985c82132c636fc7fbfef831bbfcf1593dc35f8291fe2c4af2c",
+
+        /**
+         * The initial state of the wallet, which is encoded in Base64 format.
+         * This includes the wallet's code and the initialization parameters necessary to establish the wallet's state.
+         *
+         * @type {string}
+         * @example "to4cckECFgEAAwQAAgE0ARUBFP8A9KQT9LzssAsCAgEgAxACAUgEBwLm0AHQ0wMhcbCSXwTgItdJwSCSXwTgAtMfIYIQcGx1Z70ighBkc3RyvbCSXwXgA/pAMCD6RAHIygfL/8nQ7UTQgQFA1yH0BDBcgQEI9ApvoTGzkl8H4AXTP8glghBwbHVnupI4MOMNA4IQZHN0crqSXwbjDQUGAHgB+gD0BDD4J28iMFAKoSG+8uBQghBwbHVngx6xcIAYUATLBSbPFlj6Ahn0AMtpF8sfUmDLPyDJgED7AAYAilAEgQEI9Fkw7UTQgQFA1yDIAc8W9ADJ7VQBcrCOI4IQZHN0coMesXCAGFAFywVQA88WI/oCE8tqyx/LP8mAQPsAkl8D4gIBIAgPAgEgCQ4CAVgKCwA9sp37UTQgQFA1yH0BDACyMoHy//J0AGBAQj0Cm+hMYAIBIAwNABmtznaiaEAga5Drhf/AABmvHfaiaEAQa5DrhY/AABG4yX7UTQ1wsfgAWb0kK29qJoQICga5D6AhhHDUCAhHpJN9KZEM5pA+n/mDeBKAG3gQFImHFZ8xhAT48oMI1xgg0x/TH9MfAvgju/Jk7UTQ0x/TH9P/9ATRUUO68qFRUbryogX5AVQQZPkQ8qP4ACSkyMsfUkDLH1Iwy/9SEPQAye1U+A8B0wchwACfbFGTINdKltMH1AL7AOgw4CHAAeMAIcAC4wABwAORMOMNA6TIyx8Syx/L/xESExQAbtIH+gDU1CL5AAXIygcVy//J0Hd0gBjIywXLAiLPFlAF+gIUy2sSzMzJc/sAyEAUgQEI9FHypwIAcIEBCNcY+gDTP8hUIEeBAQj0UfKnghBub3RlcHSAGMjLBcsCUAbPFlAE+gIUy2oSyx/LP8lz+wACAGyBAQjXGPoA0z8wUiSBAQj0WfKnghBkc3RycHSAGMjLBcsCUAXPFlAD+gITy2rLHxLLP8lz+wAACvQAye1UAFEAAAAAKamjF6Ph5YEdY0mFyCEyxjb8f7/vgxu/zxWT3DX4KR/ixK8sQN9iJtU=",
+        */
+        wallet_state_init: "to4cckECFgEAAwQAAgE0ARUBFP8A9KQT9LzssAsCAgEgAxACAUgEBwLm0AHQ0wMhcbCSXwTgItdJwSCSXwTgAtMfIYIQcGx1Z70ighBkc3RyvbCSXwXgA/pAMCD6RAHIygfL/8nQ7UTQgQFA1yH0BDBcgQEI9ApvoTGzkl8H4AXTP8glghBwbHVnupI4MOMNA4IQZHN0crqSXwbjDQUGAHgB+gD0BDD4J28iMFAKoSG+8uBQghBwbHVngx6xcIAYUATLBSbPFlj6Ahn0AMtpF8sfUmDLPyDJgED7AAYAilAEgQEI9Fkw7UTQgQFA1yDIAc8W9ADJ7VQBcrCOI4IQZHN0coMesXCAGFAFywVQA88WI/oCE8tqyx/LP8mAQPsAkl8D4gIBIAgPAgEgCQ4CAVgKCwA9sp37UTQgQFA1yH0BDACyMoHy//J0AGBAQj0Cm+hMYAIBIAwNABmtznaiaEAga5Drhf/AABmvHfaiaEAQa5DrhY/AABG4yX7UTQ1wsfgAWb0kK29qJoQICga5D6AhhHDUCAhHpJN9KZEM5pA+n/mDeBKAG3gQFImHFZ8xhAT48oMI1xgg0x/TH9MfAvgju/Jk7UTQ0x/TH9P/9ATRUUO68qFRUbryogX5AVQQZPkQ8qP4ACSkyMsfUkDLH1Iwy/9SEPQAye1U+A8B0wchwACfbFGTINdKltMH1AL7AOgw4CHAAeMAIcAC4wABwAORMOMNA6TIyx8Syx/L/xESExQAbtIH+gDU1CL5AAXIygcVy//J0Hd0gBjIywXLAiLPFlAF+gIUy2sSzMzJc/sAyEAUgQEI9FHypwIAcIEBCNcY+gDTP8hUIEeBAQj0UfKnghBub3RlcHSAGMjLBcsCUAbPFlAE+gIUy2oSyx/LP8lz+wACAGyBAQjXGPoA0z8wUiSBAQj0WfKnghBkc3RycHSAGMjLBcsCUAXPFlAD+gITy2rLHxLLP8lz+wAACvQAye1UAFEAAAAAKamjF6Ph5YEdY0mFyCEyxjb8f7/vgxu/zxWT3DX4KR/ixK8sQN9iJtU=",
+
+        /**
+         * The proof object is used to verify the integrity of the transaction.
+         * It contains the timestamp, domain, payload, and the signature that is used for the proof.
+         *
+         * @type {object}
+         */
+        proof: {
+            /**
+             * The timestamp of when the signature was created, in seconds since the UNIX epoch (UTC).
+             *
+             * @type {number}
+             * @example 1731021811
+             */
+            timestamp: 1731021811,
+
+            /**
+             * The length of the domain name being verified, typically 11 characters for the Swap Widget.
+             *
+             * @type {number}
+             * @example 11
+             */
+            domain_len: 11,
+
+            /**
+             * The domain name associated with the transaction, which should match the domain the wallet is connecting from.
+             *
+             * @type {string}
+             * @example "swap.coffee"
+             */
+            domain_val: "swap.coffee",
+
+            /**
+             * The payload of the wallet transaction, a string that uniquely identifies the transaction or action being verified.
+             *
+             * @type {string}
+             * @example "uD3ZE2YmeErIlVNhYItMnoiPfeDqSDCs"
+             */
+            payload: "uD3ZE2YmeErIlVNhYItMnoiPfeDqSDCs",
+
+            /**
+             * The signature for the proof, ensuring the authenticity of the transaction.
+             *
+             * @type {string}
+             * @example "CDbBPcRMRcflfqhNK8FAW7uzcK7MZZGsK3+o+atFXAdQAs3NsGZt/YpeDZoes55bBgzQwk2hraHMOJyfZrDPBg=="
+             */
+            signature: "CDbBPcRMRcflfqhNK8FAW7uzcK7MZZGsK3+o+atFXAdQAs3NsGZt/YpeDZoes55bBgzQwk2hraHMOJyfZrDPBg=="
+        }
+    }
+}
+```
+
+### 3. createSwapWidget properties (via `payload` injection mode)
+
+When using the `payload` **injection mode**, the `createSwapWidget` function accepts several configuration properties that allow you to customize the widget's appearance, behavior, and connection settings.
+
+---
+
+####  **Container Selector** (`string`):
+- The CSS selector for the HTML element where the Swap Widget will be rendered.
+> **Example**: `'#swap-widget-component'`
+
+####  **Configuration Object** (`object`):
+This object contains the settings to customize the Swap Widget:
+
+- **`theme`** (`string`): Defines the visual theme of the widget.
+> **Options**: `'light'`, `'dark'`, `'coffee'`
+
+- **`locale`** (`string`): Specifies the language and regional settings for the widget.
+> **Options**: `'zh'`, `'ua'`, `'ru'`, `'en'`, `'es'`, `'fr'`, `'fa'`
+
+#### **Payload Object** (`object`):
+- **`payload`** (`object`): The main object for configuring the connection to `injectionMode: 'payload'` the `swap.coffee widget`, containing all the necessary parameters to establish the connection through the wallet.
+> **Example**: for more information, please refer to [section 2](#2-payload-connection-configuration-structure-for-swap-widget) (`Payload` Connection Configuration Structure for `Swap Widget`).
+
+####  **`injectionMode`** (`string`):
+- Specifies the connection method to be used for wallet interactions.
+> **Options**: `'payload'`
+
+---
+
+### 4. createSwapWidget usage
+
+```typescript
+import { createSwapWidget } from '@swap-coffee/ui-sdk';
+import { swapWidgetConfig } from './config'; // Configuration file
+import { payloadConnectionConfig } from "./payload"; // Path to your payload
+
+ createSwapWidget('#swap-widget-component', {
+      // Provide the container selector where the Swap Widget will be rendered
+      ...swapWidgetConfig,  // Spread the existing Swap Widget configuration
+      // The 'payload' contains the necessary configuration for connecting the widget
+      payload: payloadConnectionConfig,
+    });
+```

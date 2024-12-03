@@ -1,0 +1,116 @@
+---
+title: 'Concepts'
+icon: 'arrows-to-circle'
+---
+
+This page contains information about entities which are essential for understanding the high-level design of the **swap.coffee DEX**.
+
+## Assets
+
+Every token, currency or fund user wants to swap or deposit as liquidity throughout **swap.coffee DEX** protocol we call an **Asset**.
+
+As for now, protocol supports 3 types of assets (and more may be added in the future).
+Each of them corresponds to a unique [TL-B scheme](/technical-guides/dex/tlb-schemes#asset), and they're as follows:
+
+- **native** - our naming for **TON**coin itself.
+- **jetton** - any token that corresponds to the [Jetton Standard](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md) built on TON Blockchain.
+- **extra** - tokens that were added to the TON Blockchain as [Extra Currencies](https://docs.ton.org/v3/documentation/dapps/defi/coins#extra-currencies)
+
+While having such an abstraction may seem like an unnecessary complication of the system to some, in fact it allows
+us to abstract work with higher-level entities, which we will describe in more detail in the [contracts section](#contracts).
+
+## AMM Strategies
+
+AMM (or Automated Market Maker) strategies are a class of algorithms that sustain pools' asset reserves and
+mathematically ensure that trades are being performed at a fair (for all participants) price, that no more money is
+taken out of the **DEX** than was invested in it and a lot of other more-technical things.
+
+Each pool is uniquely identified by its assets pair AND AMM strategy. It means that within a single implementation of
+**swap.coffee DEX** there could not exist two pools of the same AMM strategy and, for example, an assets pair of TON/USDT.
+
+Current implementation supports only 2 AMM strategies described below, however the contracts are already coded to support
+more strategies if (when) it will be needed. If you're interested in addition of new AMM strategies, please contact
+us via Telegram [@swap.coffee DEV Chat](https://t.me/swapcoffee_dev_chat).
+
+### Volatile
+
+Either known as "constant product" or "Uniswap" AMM. Ensures that product of pool's reserves remains unchanged after
+any swap or liquidity provisioning/withdrawal after pool is initially created.
+
+In other words, if pool's reserves marked as `x` and `y`, their product must equal some predetermined `k = x * y` after
+every performed swap. So, for example, if we perform a swap by providing some quantity of first asset marked as `dx`
+and want to receive some of the second asset, quantity of second asset, marked as `dy`, must be calculated from
+the formula `x * y = (x + dx) * (y - dy)`.
+
+### Stable
+
+AMM strategy designed especially for stable-coins like USDT/USDC, prices of which should not differ widely.
+
+On the demand side, it offers a Uniswap-like automated exchange with very low price slippage (typically 100 times
+smaller). On the supply side, it offers a multi-stablecoin "savings account" which, according to simulation and
+countless production use-cases on other blockchains, can bring 300% APR, assuming that traders will arbitrage
+between this AMM strategy and volatile ones.
+
+More detailed explanation is available in [Curve.Fi's Document](https://docs.curve.fi/assets/pdf/stableswap-paper.pdf).
+An example of implementation may be found on [Curve.Fi's Repository](https://github.com/curvefi/curve-contract/blob/master/contracts/pools/eurs/StableSwapEURS.vy).
+
+For our purely TVM-based implementation of this strategy, we use the following constants for the formulas introduced in the documentation above:
+
+- `n = 2`
+- `A = 2000`
+
+Thus, formula takes the following form: `8000 * (x + y) = 7999 * D + D^3 / (4xy)`, where `x` and `y` are pool's reserves
+and `D` is some predetermined variable.
+
+## Contracts
+
+**swap.coffee DEX** protocol introduces contracts of 5 (and a half) different types, which are described below.
+
+### Factory
+
+The "heart" of the protocol. It serves three purposes:
+
+1. To deploy any other contracts within the same installation of **swap.coffee DEX**.
+2. To be an entry-point for any administrative actions. Any time administrator wants to perform one of them, he sends message not to the destination contract, but proxies it throughout the **Factory**.
+3. And by being the central part in the security of inter-contract communications. They do not proxy their messages throughout the **Factory**, but it serves as a "cryptographic key" when they sign and verify messages of each other.
+
+#### Init
+
+This is that "half" we wrote above :)
+
+Every time **Factory** is about to deploy a new contract, it actually deploys this **Init** contract,
+followed by a command to overwrite its code and data cells with those that correspond to an actual type of contract
+**Factory** wanted to deploy.
+
+Such mechanism is being used because of how addresses work in TON blockchain: they depend on the code and data cells
+with which contract was initially deployed; and especially because of such behaviour it is possible to utilize inter-contract
+security system we developed within our protocol.
+
+### Vault
+
+**Vaults** are main entry points for users: every time you want to perform a swap, create new pool or deposit a liquidity,
+you will send messages to the **Vaults**. They receive your assets, keep them on their side, and redirect your request via
+inter-contract communication down the road. Whenever another contract decides it's time to process a payout for you, it
+sends an inter-contract message to the corresponding **Vault**, and after that you receive a payment.
+
+**Vault** itself, as a naming, is a declaration of not a contract source code, but of a type (or rather interface) of contracts.
+Each asset type has its own implementation of **Vault** contract, therefore there are 3 of them:
+
+- **Native Vault** - there is only one, and it serves as a treasury for **TON**coin.
+- **Jetton Vaults** - there is one for every **Jetton** our there.
+- **Extra Vaults** - similarly to **Jetton Vaults**, there is one for every **Extra Currency** in TON Blockchain; but also similarly to **Native Vault** it accepts direct messages (i.e. transactions) from the users, whilst **Jetton Vaults** react to payloads from jetton transfer notifications.
+
+### Pool
+
+Unlike **Vaults**, all the **Pools** share the same codebase: it's a single contract source code.
+As described below, they're being uniquely identified by the asset pair and AMM strategy type.
+
+Users don't directly communicate with the **Pools** on-chain: they support only inter-contract communication.
+
+### PoolCreator and LiquidityDepository
+
+These two utility contract types are being used as a user's personal treasury anytime
+he is trying to create new pool or deposit some liquidity.
+
+They're being created by inter-contract communication after you already sent your assets to the corresponding **Vaults**,
+and they auto-destroy after process of new pool creation or liquidity provisioning comes to an end.

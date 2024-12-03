@@ -1,0 +1,171 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "swap.coffee",
+  "logo": {
+    "dark": "/logo/swap-logo.svg",
+    "light": "/logo/swap-logo.svg"
+  },
+  "favicon": "/logo/swap.svg",
+  "colors": {
+    "primary": "#EA7A3B",
+    "light": "#EA7A3B",
+    "dark": "#EA7A3B",
+    "anchors": {
+      "from": "#EA7A3B",
+      "to": "#EA7A3B"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Community",
+      "url": "https://t.me/addlist/tShqOXNZ89tmYTg8"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "App",
+    "url": "https://swap.coffee"
+  },
+  "primaryTab": {
+    "name": "ENG Documentation"
+  },
+  "tabs": [
+    {
+      "name": "Documentation",
+      "url": "eng"
+    },
+    {
+      "name": "RU Documentation",
+      "url": "ru"
+    },
+    {
+      "name": "Technical Documentation",
+      "url": "technical-guides"
+    },
+    {
+      "name": "Legal",
+      "url": "legal"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/swapcoffee"
+    },
+    {
+      "name": "Developer Chat",
+      "icon": "telegram",
+      "url": "https://t.me/swapcoffee_dev_chat"
+    },
+    {
+      "name": "Developer Channel",
+      "icon": "telegram",
+      "url": "https://t.me/swapcoffee_dev"
+    },
+    {
+      "name": "TokensDB API",
+      "icon": "square-terminal",
+      "url": "technical-guides/tokens-api-openapi",
+      "openapi": "https://tokens.swap.coffee/openapi.json"
+    },
+    {
+      "name": "Aggregator API",
+      "icon": "square-terminal",
+      "url": "technical-guides/aggregator-api-openapi",
+      "openapi": "https://backend.swap.coffee/openapi"
+    }
+  ],
+  "navigation": [
+
+    {
+      "group": "User Guides",
+      "icon": "child",
+      "pages": [
+        "eng/user-guides/welcome",
+        "eng/user-guides/profit",
+        "eng/user-guides/swap",
+        "eng/user-guides/cashback",
+        "eng/user-guides/referral",
+        "eng/user-guides/claiming",
+        "eng/user-guides/staking",
+        "eng/user-guides/contests",
+        "eng/user-guides/settings"
+      ]
+    },
+    {
+      "group": "WhitePaper",
+      "icon": "bookmark",
+      "pages": [
+        "eng/white-eng"
+      ]
+    },
+    {
+      "group": "User Guides",
+      "icon": "child",
+      "pages": [
+        "ru/user-guides/welcome",
+        "ru/user-guides/profit",
+        "ru/user-guides/swap",
+        "ru/user-guides/cashback",
+        "ru/user-guides/referral",
+        "ru/user-guides/claiming",
+        "ru/user-guides/staking",
+        "ru/user-guides/contests",
+        "ru/user-guides/settings"
+      ]
+    },
+    {
+      "group": "WhitePaper",
+      "icon": "bookmark",
+      "pages": [
+        "ru/white"
+      ]
+    },
+
+
+    {
+      "group": "Technical Guides",
+      "icon": "microchip",
+      "pages": [
+        "technical-guides/aggregator-api",
+        "technical-guides/aggregator-api-openapi",
+        "technical-guides/tokens-api",
+        "technical-guides/tokens-api-openapi",
+        "technical-guides/staking-internals",
+        {
+          "group": "Aggregator UI Widget",
+          "icon": "window",
+          "pages": [
+            "technical-guides/aggregator-widget/introduction",
+            "technical-guides/aggregator-widget/configuration"
+          ]
+        },
+        {
+          "group": "DEX",
+          "icon": "right-left",
+          "pages": [
+            "technical-guides/dex/introduction",
+            "technical-guides/dex/concepts",
+            "technical-guides/dex/examples-with-visualizations",
+            "technical-guides/dex/get-methods",
+            "technical-guides/dex/tlb-schemes",
+            "technical-guides/dex/error-codes"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Legal",
+      "icon": "gavel",
+      "pages": [
+        "legal/tos",
+        "legal/policy"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "telegram": "https://t.me/addlist/tShqOXNZ89tmYTg8",
+    "x": "https://x.com/swap_coffee_ton",
+    "discord": "https://discord.gg/7wfjBH8pRu"
+  }
+}

@@ -1,0 +1,215 @@
+---
+title: Contract's Get-Methods
+icon: 'burger-fries'
+---
+
+## Factory
+
+### get_vault_address
+
+Signature:
+
+```func
+(slice, int) get_vault_address(slice asset)
+```
+
+Properties:
+
+| Type         | Name  | Description                                                     |
+|--------------|-------|-----------------------------------------------------------------|
+| Argument     | asset | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)     |
+| Return Value | 1st   | Serialized `MsgAddressInt` for the **Vault** of the given asset |
+| Return Value | 2nd   | Hash part of the address returned before                        |
+
+### get_pool_address
+
+Signature:
+
+```func
+(slice, int) get_pool_address(slice asset1, slice asset2, int amm)
+```
+
+Properties:
+
+| Type         | Name   | Description                                                                      |
+|--------------|--------|----------------------------------------------------------------------------------|
+| Argument     | asset1 | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                      |
+| Argument     | asset2 | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                      |
+| Argument     | amm    | Serialized [AMM](/technical-guides/dex/tlb-schemes#amm)                          |
+| Return Value | 1st    | Serialized `MsgAddressInt` for the **Pool** of the given asset pair and amm type |
+| Return Value | 2nd    | Hash part of the address returned before                                         |
+
+### get_pool_creator_address
+
+Signature:
+
+```func
+(slice, int) get_pool_creator_address(
+  slice owner,
+  slice asset1,
+  slice asset2,
+  int amm
+)
+```
+
+Properties:
+
+| Type         | Name   | Description                                                                                                                  |
+|--------------|--------|------------------------------------------------------------------------------------------------------------------------------|
+| Argument     | owner  | Serialized `MsgAddressInt` of the **PoolCreator**'s owner                                                                    |
+| Argument     | asset1 | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                                                                  |
+| Argument     | asset2 | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                                                                  |
+| Argument     | amm    | Serialized [AMM](/technical-guides/dex/tlb-schemes#amm)                                                                      |
+| Return Value | 1st    | Serialized `MsgAddressInt` for the **PoolCreator** of the given asset pair and amm type which is owned by the specified user |
+| Return Value | 2nd    | Hash part of the address returned before                                                                                     |
+
+### get_liquidity_depository_address
+
+Signature:
+
+```func
+(slice, int) get_liquidity_depository_address(
+  slice owner,
+  slice asset1,
+  slice asset2,
+  int amm
+)
+```
+
+Properties:
+
+| Type         | Name   | Description                                                                                                                          |
+|--------------|--------|--------------------------------------------------------------------------------------------------------------------------------------|
+| Argument     | owner  | Serialized `MsgAddressInt` of the **LiquidityDepository**'s owner                                                                    |
+| Argument     | asset1 | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                                                                          |
+| Argument     | asset2 | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                                                                          |
+| Argument     | amm    | Serialized [AMM](/technical-guides/dex/tlb-schemes#amm)                                                                              |
+| Return Value | 1st    | Serialized `MsgAddressInt` for the **LiquidityDepository** of the given asset pair and amm type which is owned by the specified user |
+| Return Value | 2nd    | Hash part of the address returned before                                                                                             |
+
+## Vault
+
+### get_asset
+
+Signature:
+
+```func
+slice get_asset()
+```
+
+Properties:
+
+| Type         | Name | Description                                                                                 |
+|--------------|------|---------------------------------------------------------------------------------------------|
+| Return Value | 1st  | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset) to which this vault corresponds |
+
+### is_active
+
+Signature:
+
+```func
+int is_active()
+```
+
+Properties:
+
+| Type         | Name | Description                                 |
+|--------------|------|---------------------------------------------|
+| Return Value | 1st  | 0 if this vault is not active, -1 otherwise |
+
+## Pool
+
+### get_jetton_data
+
+Pool is a **Jetton Master** for its LP tokens.
+This get-methods makes it compatible with [Jetton Standard](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md),
+therefore specifics about are accessible by the link.
+
+### get_wallet_address
+
+Pool is a **Jetton Master** for its LP tokens.
+This get-methods makes it compatible with [Jetton Standard](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md),
+therefore specifics about are accessible by the link.
+
+### get_pool_data
+
+Signature:
+
+```func
+(int, slice, slice, int, int, int, int, cell, int, int) get_pool_data()
+```
+
+Properties:
+
+| Type         | Name | Description                                                                     |
+|--------------|------|---------------------------------------------------------------------------------|
+| Return Value | 1st  | Version of the pool code, starts at 1                                           |
+| Return Value | 2nd  | Serialized first [Asset](/technical-guides/dex/tlb-schemes#asset) of this pool  |
+| Return Value | 3rd  | Serialized second [Asset](/technical-guides/dex/tlb-schemes#asset) of this pool |
+| Return Value | 4th  | Serialized [AMM](/technical-guides/dex/tlb-schemes#amm) of this pool            |
+| Return Value | 5th  | 0 if this pool is not active, -1 otherwise                                      |
+| Return Value | 6th  | Reserves of the first asset of this pool                                        |
+| Return Value | 7th  | Reserves of the second asset of this pool                                       |
+| Return Value | 8th  | Cell (possibly null) containing AMM strategy settings                           |
+| Return Value | 9th  | Protocol fee nominator\*                                                        |
+| Return Value | 10th | LP fee nominator\*                                                              |
+
+\* Fees are being withdrawn from swap operations only (therefore liquidity provisioning/withdrawal is fee).
+They are always charged from the input asset of the swap, and they're denoted by the nominators within the pool storage.
+Fees nominators are non-negative integers less than `max_nominator = 10000`.
+Denominator for fees is a constant equal to `1000000`.
+
+### estimate_swap_amount
+
+Signature:
+
+```func
+(int, int) estimate_swap_amount(slice asset, int amount)
+```
+
+Properties:
+
+| Type         | Name   | Description                                                                                |
+|--------------|--------|--------------------------------------------------------------------------------------------|
+| Argument     | asset  | Serialized input [Asset](/technical-guides/dex/tlb-schemes#asset) for the (potential) swap |
+| Argument     | amount | Amount of the input asset to be (potentially) swapped                                      |
+| Return Value | 1st    | Actual amount of the input asset that would be used for the swap                           |
+| Return Value | 2nd    | Amount of output asset to be received as a result of swap                                  |
+
+### estimate_liquidity_withdraw_amount
+
+Signature:
+
+```func
+(int, int) estimate_liquidity_withdraw_amount(int lp_amount)
+```
+
+Properties:
+
+| Type         | Name      | Description                                   |
+|--------------|-----------|-----------------------------------------------|
+| Argument     | lp_amount | Amount of LP tokens to be burned              |
+| Return Value | 1st       | Amount of pool's first asset to be withdrawn  |
+| Return Value | 2nd       | Amount of pool's second asset to be withdrawn |
+
+### estimate_liquidity_deposit_amount
+
+Signature:
+
+```func
+(int, int, int, int) estimate_liquidity_deposit_amount(
+  int amount1,
+  int amount2
+)
+```
+
+Properties:
+
+| Type         | Name    | Description                                                                                       |
+|--------------|---------|---------------------------------------------------------------------------------------------------|
+| Argument     | amount1 | Amount of pool's first asset to be deposited                                                      |
+| Argument     | amount2 | Amount of pool's second asset to be deposited                                                     |
+| Return Value | 1st     | Actual amount of pool's first asset that would be deposited                                       |
+| Return Value | 2nd     | Actual amount of pool's second asset that would be deposited                                      |
+| Return Value | 3rd     | Amount of LP tokens to be received                                                                |
+| Return Value | 4th     | How much of permanently locked initial LP tokens will be generated as a result of such deposition |

@@ -1,0 +1,37 @@
+---
+title: 'Error Codes'
+icon: 'bomb'
+---
+
+This page contains extensive information about all exit codes with which execution of **DEX** contracts may end up with.
+
+Additionally to [standard exit codes](https://docs.ton.org/v3/documentation/tvm/tvm-exit-codes), our contracts feature some new ones:
+
+| Error Code | Name                      | Description                                                                                                                                                                       |
+|------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 6          | Unknown opcode (Standard) | Contract received internal message with unknown opcode or contract received jetton transfer notification with custom payload, which contains unknown opcode                       |
+| 40         | Not Enough Gas (Standard) | There is not enogh gas to perform (or continue) contract execution                                                                                                                |
+| 250        | Unexpected                | Some unexpected error occurred. Please, contact **swap.coffee** administration if you face this issue                                                                             |
+| 251        | Invalid Request           | Internal error that signifies about inter-contract communication going wrong                                                                                                      |
+| 252        | Wrong Sender              | Indicates that internal message have been sent by inappropriate contract. Usually met when somebody tries to "hack" **DEX** contracts                                             |
+| 253        | Not a Factory             | Indicates that internal message was expected to be sent by the factory, but it's sender differs. Usually met when somebody tries to "hack" **DEX** contracts                      |
+| 254        | Not an Admin              | Indicates that internal message was expected to be sent by the administrative wallet, but it's sender differs. Usually met when somebody tries to "hack" **DEX** contracts        |
+| 255        | Wrong Chain               | Thrown when address other than from basechain (id = 0) was received as an argument in some query                                                                                  |
+| 256        | Wrong Assets              | Thrown on a swap if pool doesn't correlate with given assets or if it is unable to determine which asset is input and which is output                                             |
+| 257        | Same Assets               | Thrown when user tries to swap/deposit liquidity/create pool for a pair of very same assets                                                                                       |
+| 258        | Wrong Signature           | Thrown at a proof validation stage if proof's signature is not valid. Usually met when somebody tries to "hack" **DEX** contracts                                                 |
+| 259        | Invalid Balance           | Indicates that message wasn't provided with enough currency                                                                                                                       |
+| 260        | Invalid Jetton Master     | Thrown on **Jetton Vault** if activation failed due to **Jetton Master** unexpected response                                                                                      |
+| 261        | Unknown AMM               | Thrown when user tries to swap/deposit liquidity/create pool of unknown AMM                                                                                                       |
+| 262        | AMM Failed                | Internal error that signifies about AMM strategy logic going wrong. Please, contact **swap.coffee** administration if you face this issue                                         |
+| 263        | Invalid AMM Settings      | Internal error that signifies about wrong pool setup. Please, contact **swap.coffee** administration if you face this issue                                                       |
+| 264        | Invalid Liquidity         | Thrown if user tried to deposit less liquidity than minimum allowed or in case of zero-amount of one of the assets on liquidity deposition stage                                  |
+| 265        | Invalid Fees              | Thrown when **DEX** administrator tried to set invalid fees for the pool                                                                                                          |
+| 266        | Invalid Condition         | Indicates that liquidity deposition condition is of inappropriate format or contains invalid data                                                                                 |
+| 267        | Invalid Asset Type        | Indicates that internal message's body was built wrong and asset in it couldn't be deserialized                                                                                   |
+| 268        | Deadline Exceeded         | Indicates that deadline (the one that's being specified in request body) for swap or liquidity deposition exceeded by the time contract received and tried to handle that message |
+| 269        | Slippage Tolerated        | Indicates that request couldn't be executed, because slippage limitation (the one that's being specified in request body) had been triggered                                      |
+| 270        | Pool Already Exists       | Thrown on pool creation request handling if pool already exists                                                                                                                   |
+| 271        | Reserves Ratio Failed     | Indicates that liquidity deposition reserves ratio condition (the one that's being specified in the deposit request body) check failed                                            |
+| 272        | Already Active            | Internal error that is being thrown whenever contracts or **DEX** administrator try to activate vault or pool, but it's already active                                            |
+| 273        | Not Active                | Thrown whenever user tries to swap/create pool/deposit liquidity throughout inactive vault or pool                                                                                |

@@ -1,0 +1,53 @@
+---
+title: 'Tokens API'
+icon: 'books'
+---
+
+**swap.coffee** constantly updates the list of tokens (or jettons for  **TON**) that are supported by the platform.
+This list is used to determine the available tokens that can be used by our swap algorithms.
+The list of tokens and their specific properties **(TVL, price, etc)** are collected from various sources and are updated on a regular basis.
+
+You can use tokens from the list to swap them with other tokens or build your own logic on top of it.
+
+**OpenAPI Specification for the tokens API** can be found [here](https://tokens.swap.coffee/docs). You can build your own API wrapper by using the OpenAPI code generator.
+
+## Token properties
+
+Each token from the list has the following properties:
+
+- **symbol**: the token symbol (e.g. **USDT**, **CES**, **TON**, etc.)
+- **name**: the token name (e.g. **Tether**, **Toncoin**, **Scaleton**, etc.)
+- **address**: the token address on the blockchain
+- **decimals**: the number of decimals the token has
+- **blockchain_id**: the blockchain `ID` where the token is located (for TON it is always `1`)
+- **price_usd**: the price of the token in **USD**
+- **tvl**: the total value locked in the token (in **USD**)
+- **holders_count**: the number of holders of the token
+- **image**: the `URL` of the token image
+
+⚠️ **Note**: The `address` property is represented in raw format. You should convert it to a user-friendly format when using it in the swap.coffee DEX aggregator API.
+
+<span style={{ fontSize: '20px', fontWeight: 'bold' }}>**Example: CES token**</span>
+
+```json
+{
+  "address": "0:a5d12e31be87867851a28d3ce271203c8fa1a28ae826256e73c506d94d49edad",
+  "blockchain_id": 1,
+  "name": "swap.coffee",
+  "symbol": "CES",
+  "decimals": 9,
+  "tvl": 681406.0524709618,
+  "image": "https://assets.dedust.io/images/ces.webp",
+  "id": 177,
+  "price_usd": 3.31246653703748,
+  "holders_count": 1930,
+  "external_id": "16288"
+}
+```
+## Community libraries
+
+⚠️ **Note**: Libraries listed below are not maintained by **swap.coffee** team. Means that we can't guarantee their stability and correctness.
+
+| Language | Library                                                                         | Description                       |
+|:---------|:--------------------------------------------------------------------------------|:----------------------------------|
+| Python   | [py-stollen/swapcoffee-tokens](https://github.com/py-stollen/swapcoffee-tokens) | Python wrapper for the Tokens API |
