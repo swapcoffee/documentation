@@ -9,7 +9,7 @@ Keep in mind that in order to make things easier to understand, many aspects of 
 
 ## Vault Creation
 
-If you are interested in adding new asset to the **swap.coffee DEX**, first of you you must create a **Vault** for it.
+If you are interested in adding new asset to the **swap.coffee DEX**, firstly you must create a **Vault** for it.
 
 As shown below, you must send a [special message]() to the **Factory** and wait until it deploys a **Vault** for you.
 
@@ -18,7 +18,7 @@ as described [here](/technical-guides/dex/tlb-schemes#activatevaultinternal).
 You can check whether **Vault** is active by calling `is_active` get-method on it.
 If it is not, please contact us via Telegram [@swap.coffee DEV Chat](https://t.me/swapcoffee_dev_chat).
 
-Our recommendation for gas is `0.05 TON`. Excesses **won't be** returned.
+Our recommendation for gas is `0.05 TON`. Excesses **won't** be returned.
 
 ![Vault Creation](/images/dex/create_vault.png)
 
@@ -65,7 +65,7 @@ even multi-dex swaps (thankfully to custom payloads support via our notification
 
 As stated previously, visualizations have been simplified: in particular, all **Vaults**, despite their asset-type accordance,
 are shown as just a simple regular **Vault**. In real world, the actual message you send to the **Vault** to initiate swap
-depends on your initial asset type. In a similar way some other (inter-contract and outgoing messages) may also differ.
+depends on your initial asset type. In a similar way some other (inter-contract and outgoing) messages may also differ.
 
 Our recommendation for gas is `0.1 TON` for the transaction itself plus `0.05 TON` for every additional swap step after the first one.
 So, for example, if you're performing a direct swap, our recommendation is `0.1 TON`,

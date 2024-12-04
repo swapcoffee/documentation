@@ -184,38 +184,6 @@ Same as [SwapStepParams](#SwapStepParams), but is being used in inter-contract c
 | min_output_amount   | Minimum quantity of output asset to receive. If you get less, transaction will fail                                                                                                      |
 | next                | Next swap-step if any                                                                                                                                                                    |
 
-### SwapGenericFee
-
-```tl-b
-swap_generic_fee input_amount:Coins output_amount:Coins = SwapGenericFee;
-```
-
-Defines how much fees were collected from already performed swap.
-
-### SwapReferralFee
-
-```tl-b
-swap_referral_fee referral:MsgAddressInt input_amount:Coins
-                  output_amount:Coins = SwapReferralFee;
-```
-
-Defines how much fees were collected from already performed swap to the specified referral.
-
-### SwapFees
-
-```tl-b
-swap_fees lp:SwapGenericFee protocol:SwapGenericFee
-          referral:(Maybe ^SwapReferralFee) = SwapFees;
-```
-
-Defines how much fees were collected from already performed swap in total.
-
-| Property Name | Meaning                                                                                                                   |
-|---------------|---------------------------------------------------------------------------------------------------------------------------|
-| lp            | Fees for liquidity providers (they remain in pool reserves indefinitely)                                                  |
-| protocol      | Fees for the protocol (they remain in pool reserves temporary, but will be withdrawn at some point in the future)         |
-| referral      | Fees for the referral, if any (they remain in pool reserves temporary, but will be withdrawn at some point in the future) |
-
 ### PoolReserves
 
 ```tl-b
@@ -299,7 +267,8 @@ Query ID, jetton and it's amount are being determined internally from jetton tra
 #### SwapExtra
 
 ```tl-b
-swap_extra#c0ffee01 query_id:uint64 _:SwapStepParams params:^SwapParams = SwapExtra;
+swap_extra#c0ffee01 query_id:uint64 _:SwapStepParams
+                    params:^SwapParams = SwapExtra;
 ```
 
 Must be sent by user to the corresponding **Extra-Currency Vault** to initiate swap transaction.
@@ -316,8 +285,8 @@ Extra-currency and it's amount are being determined internally from the vault ty
 
 ```tl-b
 swap_successful_event#c0ffee30 query_id:uint64 input:Asset input_amount:Coins
-                               output_amount:Coins reserves:^PoolReserves
-                               fees:^SwapFees = SwapSuccessfulEvent;
+                               output_amount:Coins
+                               reserves:^PoolReserves = SwapSuccessfulEvent;
 ```
 
 Is being sent by the pool as an external outgoing message whenever swap step completes successfully.
@@ -331,7 +300,6 @@ This message occurs **after** payout is guaranteed to happen, but **before** it 
 | input_amount  | Amount of input (given) asset of the swap operation                                                                                   |
 | output_amount | Amount of output (received) asset of the swap operation                                                                               |
 | reserves      | Pool's reserves at the moment swap happened                                                                                           |
-| fees          | Information about fees that were collected with this swap operation                                                                   |
 
 #### SwapFailedEvent
 
@@ -548,7 +516,7 @@ As a result of this message execution, all half-way deposited funds will be retu
 payout#c0ffee32 query_id:uint64 = Payout;
 ```
 
-Is being sent by the **Native Vault** and **Extra-Currency Vaults** in **some** cases. Specifically, it occurs if:
+Is being sent by the **Native Vault** and **Extra-Currency Vaults** in **some** cases. More specifically, it occurs if:
 
 - Operation was initiated without notifications (custom payloads)
 - Operation was initiated with notification, but it's recipient differs from the wallet that receives funds
