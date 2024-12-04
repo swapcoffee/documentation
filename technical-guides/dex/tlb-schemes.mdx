@@ -10,12 +10,31 @@ This page contains extensive information about custom entities used in communica
 ### AMM
 
 ```tl-b
-volatile$000 = AMM;
+constant_product$000 = AMM;
 
-stable$001 = AMM;
+curve_fi_stable$001 = AMM;
 ```
 
 Defines AMM strategy type of the pool.
+
+### AMM Settings
+
+Some AMM strategies require additional settings whenever pool with such strategy is about to be created.
+Person who initiates this process must provide AMM settings cell within the transaction.
+Please, keep in mind that non-**Constant Product** pools may be created by the **DEX** administration only.
+
+#### CurveFi Stable
+
+```tl-b
+amm_settings amplification:uint16 asset1_weight:Coins
+             asset2_weight:Coins = AmmSettings;
+```
+
+| Property Name | Meaning                                                                                                                                                                                                 |
+|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| amplification | Multiplier used in StableSwap formulas. The higher this value is, the closer exchange price stays to 1:1. The lower this value is, the more exchange price looks like from **Constant Product** formula |
+| asset1_weight | Value by which first asset reserves and amounts multiplied in StableSwap formulas. Usually a power of 10                                                                                                |
+| asset2_weight | Value by which second asset reserves and amounts multiplied in StableSwap formulas. Usually a power of 10                                                                                               |
 
 ### DepositLiquidityCondition
 
@@ -352,7 +371,7 @@ Must be sent by user to the **Native Vault** as a part of pool creation (and it'
 | query_id          | Non-unique identifier which you may specify to track this transaction                                                                                                                       |
 | amount            | Amount of TONs to deposit into liquidity. Must be lower than the message value of TONs (because extra TONs will be used to pay for gas, and will be returned at the end of the transaction) |
 | params            | Parameters used to uniquely identify the pool. See: [PoolParams](#poolparams)                                                                                                               |
-| amm_settings      | Cell of AMM settings. Must be set for those AMMs that require it                                                                                                                            |
+| amm_settings      | Cell of [AMM settings](#amm-settings). Must be set for those AMMs that require it                                                                                                           |
 | notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)                                                                                                                        |
 
 #### CreatePoolJetton
@@ -368,11 +387,11 @@ This message must be included as a custom payload to the jetton-transfer message
 
 Query ID, jetton and it's amount are being determined internally from jetton transfer notification and therefore mustn't be present here.
 
-| Property Name     | Meaning                                                                       |
-|-------------------|-------------------------------------------------------------------------------|
-| params            | Parameters used to uniquely identify the pool. See: [PoolParams](#poolparams) |
-| amm_settings      | Cell of AMM settings. Must be set for those AMMs that require it              |
-| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)          |
+| Property Name     | Meaning                                                                           |
+|-------------------|-----------------------------------------------------------------------------------|
+| params            | Parameters used to uniquely identify the pool. See: [PoolParams](#poolparams)     |
+| amm_settings      | Cell of [AMM settings](#amm-settings). Must be set for those AMMs that require it |
+| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)              |
 
 #### CreatePoolExtra
 
@@ -387,12 +406,12 @@ Must be sent by user to the corresponding **Extra-Currency Vault** as a part of 
 
 Extra-currency and it's amount are being determined internally from the vault type and extra-currencies dictionary within the message.
 
-| Property Name     | Meaning                                                                       |
-|-------------------|-------------------------------------------------------------------------------|
-| query_id          | Non-unique identifier which you may specify to track this transaction         |
-| params            | Parameters used to uniquely identify the pool. See: [PoolParams](#poolparams) |
-| amm_settings      | Cell of AMM settings. Must be set for those AMMs that require it              |
-| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)          |
+| Property Name     | Meaning                                                                           |
+|-------------------|-----------------------------------------------------------------------------------|
+| query_id          | Non-unique identifier which you may specify to track this transaction             |
+| params            | Parameters used to uniquely identify the pool. See: [PoolParams](#poolparams)     |
+| amm_settings      | Cell of [AMM settings](#amm-settings). Must be set for those AMMs that require it |
+| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)              |
 
 #### DepositLiquidityNative
 
@@ -617,15 +636,15 @@ Is being sent by **Vaults** to the **Factory** at the moment somebody tries to c
 
 Keep in mind that there's no asset defined in the message, because it can be determined by the **Vault** data.
 
-| Property Name     | Meaning                                                                         |
-|-------------------|---------------------------------------------------------------------------------|
-| query_id          | Propagated identifier                                                           |
-| amount            | Amount of this vault's asset user provided as an initial liquidity for the pool |
-| params            | Parameters to uniquely identify the pool to be created                          |
-| amm_settings      | Cell of AMM settings. Must be set for those AMMs that require it                |
-| recipient         | Address of the one who will receive LP tokens                                   |
-| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)            |
-| proof             | Special cell constructed for securing inter-contract communication              |
+| Property Name     | Meaning                                                                           |
+|-------------------|-----------------------------------------------------------------------------------|
+| query_id          | Propagated identifier                                                             |
+| amount            | Amount of this vault's asset user provided as an initial liquidity for the pool   |
+| params            | Parameters to uniquely identify the pool to be created                            |
+| amm_settings      | Cell of [AMM settings](#amm-settings). Must be set for those AMMs that require it |
+| recipient         | Address of the one who will receive LP tokens                                     |
+| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)              |
+| proof             | Special cell constructed for securing inter-contract communication                |
 
 #### CreatePoolCreatorInternal
 

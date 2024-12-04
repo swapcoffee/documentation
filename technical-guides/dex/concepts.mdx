@@ -32,9 +32,9 @@ Current implementation supports only 2 AMM strategies described below, however t
 more strategies if (when) it will be needed. If you're interested in addition of new AMM strategies, please contact
 us via Telegram [@swap.coffee DEV Chat](https://t.me/swapcoffee_dev_chat).
 
-### Volatile
+### Constant Product
 
-Either known as "constant product" or "Uniswap" AMM. Ensures that product of pool's reserves remains unchanged after
+Either known as "volatile" or "Uniswap" AMM. Ensures that product of pool's reserves remains unchanged after
 any swap or liquidity provisioning/withdrawal after pool is initially created.
 
 In other words, if pool's reserves marked as `x` and `y`, their product must equal some predetermined `k = x * y` after
@@ -42,25 +42,20 @@ every performed swap. So, for example, if we perform a swap by providing some qu
 and want to receive some of the second asset, quantity of second asset, marked as `dy`, must be calculated from
 the formula `x * y = (x + dx) * (y - dy)`.
 
-### Stable
+### CurveFi Stable
 
 AMM strategy designed especially for stable-coins like USDT/USDC, prices of which should not differ widely.
 
 On the demand side, it offers a Uniswap-like automated exchange with very low price slippage (typically 100 times
 smaller). On the supply side, it offers a multi-stablecoin "savings account" which, according to simulation and
 countless production use-cases on other blockchains, can bring 300% APR, assuming that traders will arbitrage
-between this AMM strategy and volatile ones.
+between this AMM strategy and **Constant Product** pools.
 
 More detailed explanation is available in [Curve.Fi's Document](https://docs.curve.fi/assets/pdf/stableswap-paper.pdf).
 An example of implementation may be found on [Curve.Fi's Repository](https://github.com/curvefi/curve-contract/blob/master/contracts/pools/eurs/StableSwapEURS.vy).
 
-For our purely TVM-based implementation of this strategy, we use the following constants for the formulas introduced in the documentation above:
-
-- `n = 2`
-- `A = 2000`
-
-Thus, formula takes the following form: `8000 * (x + y) = 7999 * D + D^3 / (4xy)`, where `x` and `y` are pool's reserves
-and `D` is some predetermined variable.
+Our implementation also supports assets weights, one of common use-cases for which is to normalize pool's assets
+whenever they have different values of decimals.
 
 ## Contracts
 
