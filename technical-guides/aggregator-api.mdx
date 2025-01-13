@@ -279,6 +279,117 @@ The route status can be requested within 2 hours from the moment `route_id` (and
 If all transactions are in terminal status (one of `succeeded`, `failed` or `timed_out`), further receipt of this
 route's status will be possible only for 1 minute, after which it will be invalidated from our service's cache.
 
+## Custom fees (for partners only)
+
+Starting January 2025 various DEXes stopped sharing their fees with aggregators like **swap.coffee**.
+We understand the desire of our partners to continue earning on user transactions, and therefore we provide
+functionality for charging additional fees.
+
+To do so, it is enough to pass the `custom_fee` property to the transaction construction method:
+```typescript
+// building the route itself
+const route = await routingApi.buildRoute({
+    input_token: assetIn,
+    output_token: assetOut,
+    input_amount: input_amount,
+    max_splits: 3 // Important! Please, continue reading to understand why
+})
+
+// building transactions of the route
+const transactions = await routingApi.buildTransactionsV2({
+    sender_address: connector.account?.address!!, // address of user's wallet
+    slippage: 0.1, // 10% slippage
+    paths: route.data.paths,
+    referral_name: '#YOUR_REFERRAL_NAME#',
+    custom_fee: {
+        fixed_fee: 'value',
+        percentage_fee: 'value',
+        'min_percentage_fee_fixed': 'value',
+        'max_percentage_fee_fixed': 'value'
+    }
+})
+```
+
+As you can see, there are multiple opportunities to set up custom fees collection. Let's dive into them!
+
+First of all, `custom_fee` specification looks as follows:
+```typescript
+export interface ApiTransactionsCustomFee {
+    /**
+     * Value in nanotons
+     * @type {string}
+     * @memberof ApiTransactionsCustomFee
+     */
+    'fixed_fee'?: string;
+    /**
+     * Value in 1/1000000: 1 is 0.0001%, 1000000 is 100%. If present, can not be less than 10000000 (0.01 TON)
+     * @type {number}
+     * @memberof ApiTransactionsCustomFee
+     */
+    'percentage_fee'?: number;
+    /**
+     * Value in nanotons. No less than this value may be withdrawn as a percentage_fee. Must be set if percentage_fee is present. Can not be less than 10000000 (0.01 TON)
+     * @type {string}
+     * @memberof ApiTransactionsCustomFee
+     */
+    'min_percentage_fee_fixed'?: string;
+    /**
+     * Value in nanotons. If set, no more than this value may be withdrawn as a percentage_fee. Taken into account only if percentage_fee is present
+     * @type {string}
+     * @memberof ApiTransactionsCustomFee
+     */
+    'max_percentage_fee_fixed'?: string;
+}
+```
+
+You can charge fixed, volume-percentage based or even both fees every time user performs a swap throughout your service.
+Each method adds additional transaction to the list given to the user for signing. Regardless of the method chosen and
+tokens of the swap, fees are always charged in TONs.
+
+Please, keep in mind that whatever value you set, it is not the amount you will receive: all custom fees are divided
+equally between our partners and **swap.coffee** itself, which means that you will get only half of what you request
+from users there.
+
+### Fixed fee
+
+This method is for those cases when you want to charge the same level of commission on all trades through your service,
+regardless of the trade volume. Please keep in mind that `fixed_fee` is specified in nano-TONs and must not be less than
+`10_000_000`, which equals 0.01 TON.
+
+### Volume-percentage based fee
+
+If you want to charge more commission the larger the trade the user makes, this method is for you.
+`percentage_fee` is specified in a parts on `1/1_000_000`: `1` stands for `0.0001%` and `1_000_000` stands for `100%`.
+
+Whilst using this method, you must also specify `min_percentage_fee_fixed` property, which, as much as `fixed_fee`,
+must not be less than `10_000_000`, which equals 0.01 TON. It is also up to you whether you want to limit fee value
+from the above by setting `max_percentage_fee_fixed` property.
+
+Overall, the final formula for volume-percentage based fee is as follows:
+```
+ref_fee = max(
+    max_percentage_fee_fixed,
+    min(
+        min_percentage_fee_fixed,
+        volume_usdt * percentage_fee / 1_000_000
+    )
+)
+```
+
+### Thinking of max splits
+
+Because of custom fees being withdrawn as a separate transactions, it is very important to keep in mind that wallet
+contracts have a limitation of how much transactions they may send at once: no more than 4 for walletV4 and no more
+than 255 for walletV5.
+
+That's why, when adding custom fees, you **must** guarantee that the route for which you are building transactions
+contains no more than `max_wallet_txs - 1` splits: it is configurable during `buildRoute` invocation (as shown above).
+
+Default value of `max_splits` for `buildRoute` is 4. So, if you haven't specified that property before, it's time to
+start doing so. If you have tools to determine user's wallet version, you may set it to `3` for walletV4 and to `20`
+for walletV5. Otherwise, you can just leave it at `3`, because in most circumstances this is more than enough for a
+good route to be built.
+
 ## API Limitations
 Our API is public, which means it allows unauthorized access. However, this access has its limitations:
 
