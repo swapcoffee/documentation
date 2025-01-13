@@ -137,7 +137,8 @@
           "icon": "window",
           "pages": [
             "technical-guides/aggregator-widget/introduction",
-            "technical-guides/aggregator-widget/configuration"
+            "technical-guides/aggregator-widget/configuration",
+            "technical-guides/aggregator-widget/advanced"
           ]
         },
         {
