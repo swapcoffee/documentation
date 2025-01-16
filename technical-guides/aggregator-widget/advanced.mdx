@@ -23,7 +23,38 @@ createSwapWidget("#test", {
 });
 ```
 
-- So, passing instead of `TEST_WIDGET_REFERRAL` your **referral** the widget will recognize your **referral** ``(only if it is valid)`` and share the profit with the widget integrator
+
+## Setup widget custom fees
+
+If you are an **partner** of `swap.coffee` and have a **unique referral** you can pass custom fee settings directly into the widget configuration
+
+> - You can read more about the concept of **partner custom commissions** 👉 [**here**](https://docs.swap.coffee/technical-guides/aggregator-api#custom-fees-for-partners-only)
+---
+
+To pass the **referral** we have a `customFeeSettings` configuration parameter
+
+You can do it in a similar way:
+
+---
+
+```typescript
+createSwapWidget("#test", {
+    widgetReferral: "TEST_WIDGET_REFERRAL",
+    customFeeSettings: {
+        fixed_fee: 'value',
+        percentage_fee: 0,
+        min_percentage_fee_fixed: 'value',
+        max_percentage_fee_fixed: 'value'
+    },
+    otherConfig...,
+});
+```
+
+- So, passing instead of `TEST_WIDGET_REFERRAL` your **referral** the widget will recognize your **referral** ``(only if it is valid)`` and share the profit with the widget integrator.
+
+**Conclusion**
+
+To receive **profit** from the protocol, you must have an `ACTIVE referral` and complete the custom `fee settings`.
 
 
 > 💡 **Tip**: If you are interested in creating a unique referral for your integration, contact 👉 [**Lizard**](https://t.me/lizard_tail).
