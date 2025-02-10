@@ -1,0 +1,59 @@
+---
+title: 'Events Workflow'
+description: 'These events allow for enhanced monitoring, reporting, and analytics.'
+icon: 'right-left'
+---
+
+## Overview
+
+Each of these **events** provides critical information that can be used to monitor user interactions, improve platform functionality, and generate comprehensive analytics reports.
+
+### Supported Events
+
+Here are the events we currently support:
+
+---
+
+****event_route_built**** - ``Triggered when a route is built``.
+
+****event_token_changed**** - ``Triggered when the selected token changes``.
+
+****event_swap_settings_updated**** - ``Triggered when the swap settings are updated``.
+
+****event_token_imported**** - ``Triggered when a token is imported``.
+
+****event_transactions_built**** - ``Triggered when a set of transactions is built``.
+
+****event_swap_result_received**** - ``Triggered when the swap result is received``.
+
+---
+
+### How to Listen our Events
+
+To listen for these **events** on the client side, you can use the `addEventListener` method. Here's how you can listen `event_route_built` event as example:
+
+```typescript
+
+// Event listener for the 'event_route_built' event
+
+window.addEventListener('event_route_built', (event) => {
+  console.log('Route build, details:', event.detail);
+});
+
+```
+
+### Event Detail
+
+Each of these events carries additional data that can be accessed through `event.detail`. For example:
+
+- **`event_route_built`**: Contains information about the route, including the tokens involved and estimated fees.
+- **`event_token_changed`**: Contains the details of the token that has been changed.
+- **`event_swap_settings_updated`**: Contains the updated swap settings.
+- **`event_token_imported`**: Contains the details of the imported token.
+- **`event_transactions_built`**: Contains the details of the built transactions.
+- **`event_swap_result_received`**: Contains the result of the swap.
+
+## Conclusion
+
+
+By following the guidelines outlined in this documentation, you can effectively manage events such as route building, token changes, swap settings updates, and more.
