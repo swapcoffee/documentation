@@ -759,10 +759,22 @@ It is required to ensure security later on, but unfortunately in order to obtain
 to ask **Jetton Master** for it. Not all **Jetton Masters** support such thing on-chain, therefore for some older jettons
 administrative affection is required.
 
+#### WithdrawInternal
+
+```tl-b
+withdraw_internal#c0ffee2d query_id:uint64 asset:Asset amount:Coins
+                           receiver:MsgAddressInt = WithdrawInternal;
+```
+
+Is being sent by the **Factory** to the **Pool** whenever it receives administrative request to do so.
+
+Upon receiving such a message, **Pool** checks whether administrator is trying to withdraw not more than stored
+amount of collected protocol fees. If so, it sends payout command to the **Vault** to fulfill initial request.
+
 #### UpdateContractInternal
 
 ```tl-b
-update_contract_internal#c0ffee2d query_id:uint64 excesses_receiver:MsgAddressInt
+update_contract_internal#c0ffee2e query_id:uint64 excesses_receiver:MsgAddressInt
                                   _:ContractUpdate = UpdateContractInternal;
 ```
 
@@ -799,14 +811,14 @@ Must be sent from the administrative wallet to the **Factory** in order to activ
 #### Withdraw
 
 ```tl-b
-withdraw#c0ffee43 query_id:uint64 asset:Asset amount:Coins
-                  receiver:MsgAddressInt = Withdraw;
+withdraw#c0ffee43 query_id:uint64 pool_address:MsgAddressInt asset:Asset
+                  amount:Coins receiver:MsgAddressInt = Withdraw;
 ```
 
 Must be sent from the withdrawer wallet to the **Factory** in order to withdraw some assets.
 
-Used to withdraw protocol and referral fees: they are not distributed (nor calculated) on-chain,
-because it will lead to significantly higher gas consumption for end-users.
+Used to withdraw collected protocol fees: they are calculated (collected) on-chain, but must be distributed off-chain
+in order to significantly lower gas consumption for end-users.
 
 #### UpdateCodeCell
 
