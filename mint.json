@@ -76,7 +76,6 @@
     }
   ],
   "navigation": [
-
     {
       "group": "User Guides",
       "icon": "child",
@@ -125,17 +124,21 @@
         "ru/white"
       ]
     },
-
-
     {
       "group": "Technical Guides",
       "icon": "microchip",
       "pages": [
-        "technical-guides/aggregator-api",
-        "technical-guides/aggregator-api-openapi",
+        {
+          "group": "Aggregator API & SDK",
+          "icon": "spider",
+          "pages": [
+            "technical-guides/aggregator-api/introduction",
+            "technical-guides/aggregator-api/routing",
+            "technical-guides/aggregator-api/strategy-orders",
+            "technical-guides/aggregator-api/staking-internals"
+          ]
+        },
         "technical-guides/tokens-api",
-        "technical-guides/tokens-api-openapi",
-        "technical-guides/staking-internals",
         {
           "group": "Aggregator UI Widget",
           "icon": "window",
