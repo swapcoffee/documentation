@@ -125,7 +125,7 @@ const tx = await strategiesApi.getStrategyOrderCreationTransaction(
 
 There are some non-obvious parameters in this request that require further explanation:
 - `max_suborders` - maximum amount of sub-orders this order may be split into. Must be within bounds `[1; 255]`.
-- `max_invocations` - maximum amount of sub-orders execution tries. Must be within bounds `[max_suborders; 255].
+- `max_invocations` - maximum amount of sub-orders execution tries. Must be within bounds `[max_suborders; 255]`.
 What we mean by _try_ here is as follows:
     - If sub-order executes successfully, it consumes one _try_, and order execution continues as planned;
     - Otherwise (if sub-order couldn't be fulfilled due to slippage toleration, deadline exceeding, etc), -
