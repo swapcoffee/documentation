@@ -134,6 +134,7 @@
           "pages": [
             "technical-guides/aggregator-api/introduction",
             "technical-guides/aggregator-api/routing",
+            "technical-guides/aggregator-api/staking-api",
             "technical-guides/aggregator-api/strategy-orders",
             "technical-guides/aggregator-api/staking-internals"
           ]
