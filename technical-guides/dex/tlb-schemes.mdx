@@ -101,10 +101,17 @@ Used for extra currencies.
 ### PoolParams
 
 ```tl-b
-pool_params first:Asset second:Asset amm:AMM = PoolParams;
+pool_params first:Asset second:Asset amm:AMM amm_settings:(Maybe ^Cell) = PoolParams;
 ```
 
-Used to uniquely identify the pool. Only one pool can exist for given asset-pair and AMM type.
+Used to uniquely identify the pool. Only one pool can exist for given asset-pair, AMM type and AMM settings.
+
+| Property Name | Meaning                                                                           |
+|---------------|-----------------------------------------------------------------------------------|
+| first         | First [asset](#asset) of the pool (in any order)                                  |
+| second        | Second [asset](#asset) of the pool (in any order)                                 |
+| amm           | [Market-making strategy](#amm) of the pool                                        |
+| amm_settings  | Cell of [AMM settings](#amm-settings). Must be set for those AMMs that require it |
 
 ### PublicPoolCreationParams
 
@@ -123,8 +130,7 @@ Params that may be publicly used for new pools creation:
 ### PrivatePoolCreationParams
 
 ```tl-b
-private_pool_creation_params is_active:uint1 amm_settings:(Maybe ^Cell)
-                             extra_settings:(Maybe ^Cell)
+private_pool_creation_params is_active:uint1 extra_settings:(Maybe ^Cell)
 = PrivatePoolCreationParams;
 ```
 
@@ -133,7 +139,6 @@ Params that may be used for new pools creation by DEX administration only:
 | Property Name  | Meaning                                                                                                        |
 |----------------|----------------------------------------------------------------------------------------------------------------|
 | is_active      | Is pool active (functional) at the time it's being created. Must be set to 1 when invoked from non-admin users |
-| amm_settings   | Cell of [AMM settings](#amm-settings). Must be set for those AMMs that require it                              |
 | extra_settings | Reserved for future features, not currently in use                                                             |
 
 ### PoolCreationParams
@@ -168,9 +173,9 @@ Defines how to handle notifications (custom payloads) in none of, one of or both
 ### PoolUpdateParams
 
 ```tl-b
-pool_update_params flags:(## 3) amm_settings:flags.0?^Cell
-                   protocol_fee:flags.1?uint16 lp_fee:flags.1?uint16
-                   is_active:flags.2?uint1 = PoolUpdateParams;
+pool_update_params flags:(## 2)
+                   protocol_fee:flags.0?uint16 lp_fee:flags.0?uint16
+                   is_active:flags.1?uint1 = PoolUpdateParams;
 ```
 
 Defines pool's parameters that may be updated by **DEX** administrator.
@@ -648,7 +653,7 @@ Keep in mind that there's no asset defined in the message, because it can be det
 #### CreatePoolCreatorInternal
 
 ```tl-b
-create_pool_creator_internal#c0ffee24 query_id:uint64 asset:Asset amm:AMM amount:Coins
+create_pool_creator_internal#c0ffee24 query_id:uint64 asset:Asset amount:Coins
                                       creation_params:^PoolCreationParams
 = CreatePoolCreatorInternal;
 ```
@@ -705,7 +710,7 @@ Keep in mind that there's no asset defined in the message, because it can be det
 #### CreateLiquidityDepositoryInternal
 
 ```tl-b
-create_liquidity_depository_internal#c0ffee28 query_id:uint64 asset:Asset amm:AMM
+create_liquidity_depository_internal#c0ffee28 query_id:uint64 asset:Asset
                                               amount:Coins
                                               params:^DepositLiquidityParamsTrimmed
 = CreateLiquidityDepositoryInternal;
