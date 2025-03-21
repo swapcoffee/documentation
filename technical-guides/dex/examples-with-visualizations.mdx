@@ -55,6 +55,9 @@ Whenever you provide **swap.coffee DEX** pools with liquidity, you get LP (Liqui
 Those tokens correspond to a **Jetton Standard** in which **Pool** serves as a **Jetton Master** contract.
 Thereby, in order to get funds back, all you need to do is to burn LP tokens you currently own.
 
+Also, our LP jetton wallets support `custom_payload` on burn so that users may specify withdrawal liquidity parameters
+to secure the operation. You can read more about it in [TL-B schemes](/technical-guides/dex/tlb-schemes#withdrawliquidityparams) section.
+
 ![Liquidity Withdrawal](/images/dex/withdraw_liquidity.png)
 
 ## Swap

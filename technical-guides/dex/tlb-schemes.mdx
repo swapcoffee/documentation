@@ -36,6 +36,30 @@ amm_settings amplification:uint16 asset1_weight:Coins
 | asset1_weight | Value by which first asset reserves and amounts multiplied in StableSwap formulas. Usually a power of 10                                                                                                |
 | asset2_weight | Value by which second asset reserves and amounts multiplied in StableSwap formulas. Usually a power of 10                                                                                               |
 
+### Asset
+
+```tl-b
+native$00 = Asset;
+
+jetton$01 chain:uint8 hash:uint256 = Asset;
+
+extra$10 id:uint32 = Asset;
+```
+
+Defines asset type (and metadata) to work with.
+
+#### native
+
+Used for TONcoin.
+
+#### jetton
+
+Used for any jettons.
+
+#### extra
+
+Used for extra currencies.
+
 ### DepositLiquidityCondition
 
 ```tl-b
@@ -72,31 +96,26 @@ In other words, all of the following formulas must be true:
 
 #### complex
 
-Just a combination of **none** and **reserves_ratio**.
+Just a combination of **lp_quantity** and **reserves_ratio**.
 
-### Asset
+### WithdrawLiquidityCondition
 
 ```tl-b
-native$00 = Asset;
+none$00 = WithdrawLiquidityCondition;
 
-jetton$01 chain:uint8 hash:uint256 = Asset;
+assets_quantity$01 min_first_amount:Coins min_second_amount = WithdrawLiquidityCondition;
 
-extra$10 id:uint32 = Asset;
+reserves_ratio$10 denominator:uint16 min_nominator:uint16
+                  max_nominator:uint16 = WithdrawLiquidityCondition;
+
+complex$11 min_first_amount min_second_amount:Coins denominator:uint16
+           min_nominator:uint16 max_nominator:uint16 = WithdrawLiquidityCondition;
 ```
 
-Defines asset type (and metadata) to work with.
+Defines condition, which will be checked whenever user tries to withdraw already provided liquidity from the pool.
+If it fails, transaction will be reverted (and LP tokens will be minted back).
 
-#### native
-
-Used for TONcoin.
-
-#### jetton
-
-Used for any jettons.
-
-#### extra
-
-Used for extra currencies.
+Subtypes are very similar with [DepositLiquidityCondition](#depositliquiditycondition) ones.
 
 ### PoolParams
 
@@ -266,6 +285,26 @@ deposit_liquidity_params params:^DepositLiquidityParamsTrimmed
 ```
 
 Extended version of the previous one. Pool parameters are used to identify the pool.
+
+### WithdrawLiquidityParams
+
+```tl-b
+withdraw_liquidity_params deadline:uint32
+                          condition:WithdrawLiquidityCondition
+                          extra_settings:(Maybe ^Cell)
+                          on_success:(Maybe ^NotificationDataSingle)
+= WithdrawLiquidityParams;
+```
+
+Defines parameters that may be specified by user when withdrawing already provided liquidity (by burning his LP tokens).
+This exact entity is being used as a `custom_payload` within [burn message](#burn-liquidity-withdrawal).
+
+| Property Name  | Meaning                                                                                                                                   |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| deadline       | Unix timestamp. If contract receives liquidity withdrawal message after that time, transaction will be failed at that step                |
+| condition      | Used to protect the liquidity withdrawer from unfavorable pool conditions. See: [WithdrawLiquidityCondition](#withdrawliquiditycondition) |
+| extra_settings | Reserved for future features, not currently in use                                                                                        |
+| on_success     | Used for custom payloads on successful liquidity withdrawals. See: [NotificationData](#notificationdata)                                  |
 
 ### ContractUpdate
 
@@ -546,6 +585,21 @@ Must be sent by the user to the **PoolCreator** or **LiquidityDepository** if on
 transactions succeeded and user decides to cancel previously initiated process.
 As a result of this message execution, all half-way deposited funds will be returned back to the user.
 
+#### Burn (liquidity withdrawal)
+
+To withdraw liquidity, user simply needs to burn his LP tokens by sending the following message to his LP jetton wallet,
+according to [jetton standard](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md#2-burn):
+```tl-b
+burn#595f07bc query_id:uint64 amount:(VarUInteger 16)
+              response_destination:MsgAddress custom_payload:(Maybe ^Cell)
+              = InternalMsgBody;
+```
+
+Although this scheme includes a `custom_payload`, regular jetton wallets do not support it, and therefore there is no
+way for user to provide any extra data related to token burning. That's why we slightly modified code of our LP jetton
+wallets, and they support `custom_payload`.
+If needed, user may use it, passing [WithdrawLiquidityParams](#withdrawliquidityparams) as a `custom_payload`.
+
 ### Miscellaneous
 
 #### Payout
@@ -692,6 +746,7 @@ Properties are pretty much the same with [CreatePoolCreatorRequest](#createpoolc
 ```tl-b
 create_liquidity_depository_request#c0ffee27 query_id:uint64 amount:Coins
                                              params:DepositLiquidityParams
+                                             sender:MsgAddressInt
                                              proof:^Cell
 = CreateLiquidityDepositoryRequest;
 ```
@@ -705,6 +760,7 @@ Keep in mind that there's no asset defined in the message, because it can be det
 | query_id      | Propagated identifier                                                                        |
 | amount        | Amount of this vault's asset user provided as a liquidity for the pool                       |
 | params        | Parameters for liquidity provisioning. See [DepositLiquidityParams](#depositliquidityparams) |
+| sender        | Address of the user who initiated transaction                                                |
 | proof         | Special cell constructed for securing inter-contract communication                           |
 
 #### CreateLiquidityDepositoryInternal
