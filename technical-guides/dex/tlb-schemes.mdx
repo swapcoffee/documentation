@@ -135,16 +135,19 @@ Used to uniquely identify the pool. Only one pool can exist for given asset-pair
 ### PublicPoolCreationParams
 
 ```tl-b
-public_pool_creation_params recipient:MsgAddressInt notification_data:(Maybe ^Cell)
+public_pool_creation_params recipient:MsgAddressInt
+                            use_recipient_on_failure:int1
+                            notification_data:(Maybe ^Cell)
 = PublicPoolCreationParams;
 ```
 
 Params that may be publicly used for new pools creation:
 
-| Property Name     | Meaning                                                                                                                           |
-|-------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| recipient         | Address to which LP tokens must go after transaction succeed (or to which funds must return in failure scenario). Must be present |
-| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)                                                              |
+| Property Name            | Meaning                                                                                                                                                               |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| recipient                | Address to which LP tokens must go after transaction succeed (or to which funds must return in failure scenario). Must be present                                     |
+| use_recipient_on_failure | Determines where to accrue funds in case of any failure. If set to 0, funds will be returned to transaction initiator; otherwise they will be returned to `recipient` |
+| notification_data        | Used for custom payloads. See: [NotificationData](#notificationdata)                                                                                                  |
 
 ### PrivatePoolCreationParams
 
@@ -258,7 +261,8 @@ Defines reserves of the pool.
 ### DepositLiquidityParamsTrimmed
 
 ```tl-b
-deposit_liquidity_params_trimmed recipient:MsgAddressInt referral:MsgAddressInt
+deposit_liquidity_params_trimmed recipient:MsgAddressInt use_recipient_on_failure:int1
+                                 referral:MsgAddressInt
                                  deadline:uint32 condition:DepositLiquidityCondition
                                  extra_settings:(Maybe ^Cell)
                                  notification_data:(Maybe ^NotificationData)
@@ -268,14 +272,15 @@ deposit_liquidity_params_trimmed recipient:MsgAddressInt referral:MsgAddressInt
 Defines parameters required for liquidity provisioning.
 This exact entity is being used in inter-contract communication and lacks some of extra information (see below).
 
-| Property Name     | Meaning                                                                                                                               |
-|-------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| recipient         | Address to which LP tokens must go after transaction succeed (or to which funds must return in failure scenario). Must be present     |
-| referral          | Referral address used exclusively for analytical purposes. No fees or any kind or rewards will be given                               |
-| deadline          | Unix timestamp. If contract receives liquidity provisioning message after that time, transaction will be failed at that step          |
-| condition         | Used to protect the liquidity provider from unfavorable pool conditions. See: [DepositLiquidityCondition](#depositliquiditycondition) |
-| extra_settings    | Reserved for future features, not currently in use                                                                                    |
-| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)                                                                  |
+| Property Name            | Meaning                                                                                                                                                               |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| recipient                | Address to which LP tokens must go after transaction succeed (or to which funds must return in failure scenario). Must be present                                     |
+| use_recipient_on_failure | Determines where to accrue funds in case of any failure. If set to 0, funds will be returned to transaction initiator; otherwise they will be returned to `recipient` |
+| referral                 | Referral address used exclusively for analytical purposes. No fees or any kind or rewards will be given                                                               |
+| deadline                 | Unix timestamp. If contract receives liquidity provisioning message after that time, transaction will be failed at that step                                          |
+| condition                | Used to protect the liquidity provider from unfavorable pool conditions. See: [DepositLiquidityCondition](#depositliquiditycondition)                                 |
+| extra_settings           | Reserved for future features, not currently in use                                                                                                                    |
+| notification_data        | Used for custom payloads. See: [NotificationData](#notificationdata)                                                                                                  |
 
 ### DepositLiquidityParams
 
@@ -289,7 +294,7 @@ Extended version of the previous one. Pool parameters are used to identify the p
 ### WithdrawLiquidityParams
 
 ```tl-b
-withdraw_liquidity_params deadline:uint32
+withdraw_liquidity_params use_recipient_on_failure:int1 deadline:uint32
                           condition:WithdrawLiquidityCondition
                           extra_settings:(Maybe ^Cell)
                           on_success:(Maybe ^NotificationDataSingle)
@@ -299,12 +304,13 @@ withdraw_liquidity_params deadline:uint32
 Defines parameters that may be specified by user when withdrawing already provided liquidity (by burning his LP tokens).
 This exact entity is being used as a `custom_payload` within [burn message](#burn-liquidity-withdrawal).
 
-| Property Name  | Meaning                                                                                                                                   |
-|----------------|-------------------------------------------------------------------------------------------------------------------------------------------|
-| deadline       | Unix timestamp. If contract receives liquidity withdrawal message after that time, transaction will be failed at that step                |
-| condition      | Used to protect the liquidity withdrawer from unfavorable pool conditions. See: [WithdrawLiquidityCondition](#withdrawliquiditycondition) |
-| extra_settings | Reserved for future features, not currently in use                                                                                        |
-| on_success     | Used for custom payloads on successful liquidity withdrawals. See: [NotificationData](#notificationdata)                                  |
+| Property Name            | Meaning                                                                                                                                                               |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| use_recipient_on_failure | Determines where to accrue funds in case of any failure. If set to 0, funds will be returned to transaction initiator; otherwise they will be returned to `recipient` |
+| deadline                 | Unix timestamp. If contract receives liquidity withdrawal message after that time, transaction will be failed at that step                                            |
+| condition                | Used to protect the liquidity withdrawer from unfavorable pool conditions. See: [WithdrawLiquidityCondition](#withdrawliquiditycondition)                             |
+| extra_settings           | Reserved for future features, not currently in use                                                                                                                    |
+| on_success               | Used for custom payloads on successful liquidity withdrawals. See: [NotificationData](#notificationdata)                                                              |
 
 ### ContractUpdate
 
@@ -719,7 +725,8 @@ Properties are pretty much the same with [CreatePoolCreatorRequest](#createpoolc
 #### CreatePoolRequest
 
 ```tl-b
-create_pool_request#c0ffee25 query_id:uint64 amount1:Coins amount2:Coins
+create_pool_request#c0ffee25 query_id:uint64 amount1:Coins
+                             amount2:Coins tx_initiator:MsgAddressInt
                              creation_params:^PoolCreationParams proof:^Cell
 = CreatePoolRequest;
 ```
@@ -731,8 +738,11 @@ Properties are pretty much the same with [CreatePoolCreatorRequest](#createpoolc
 #### CreatePoolInternal
 
 ```tl-b
-create_pool_internal#c0ffee26 query_id:uint64 amount1:Coins amount2:Coins
-                              recipient:MsgAddressInt extra_settings:(Maybe ^Cell)
+create_pool_internal#c0ffee26 query_id:uint64 amount1:Coins
+                              amount2:Coins tx_initiator:MsgAddressInt
+                              recipient:MsgAddressInt
+                              use_recipient_on_failure:int1
+                              extra_settings:(Maybe ^Cell)
                               notification_data:(Maybe ^NotificationData)
 = CreatePoolInternal;
 ```
@@ -779,7 +789,8 @@ Properties are pretty much the same with [CreateLiquidityDepositoryRequest](#cre
 #### DepositLiquidityInternal
 
 ```tl-b
-deposit_liquidity_internal#c0ffee29 query_id:uint64 amount1:Coins amount2:Coins
+deposit_liquidity_internal#c0ffee29 query_id:uint64 amount1:Coins
+                                    amount2:Coins tx_initiator:MsgAddressInt
                                     params:^DepositLiquidityParamsTrimmed
                                     proof:^Cell = DepositLiquidityInternal;
 ```
