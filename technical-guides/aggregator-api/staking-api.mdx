@@ -1,18 +1,18 @@
 ---
-title: 'Staking API'
-description: 'Technical documentation for tokens with staking information and the API for building stake/unstake transactions'
+title: 'Liquid Staking API'
+description: 'Technical documentation for interacting with TON liquid staking pools'
 icon: 'wand-magic-sparkles'
 ---
 
 # Introduction
 
-Tokens in the swap.coffee platform can have associated staking pools. The staking pool information is represented by the `stackingPool` object, which contains details about the staking pool, such as the address, name, APY, and other relevant information.
+Tokens in the swap.coffee platform can have associated staking pools. The staking pool information is represented by the `stakingPool` object, which contains details about the staking pool, such as the address, name, APY, and other relevant information.
 Currently, we collect staking information for the following tokens:
 
 
-* hTON (Hipo Staked TON)
-* tsTON (Tonstakers)
-* stTON (Bemo)
+* hTON (Hipo Staked TON) - https://hipo.finance
+* tsTON (Tonstakers) - https://tonstakers.com
+* stTON (Bemo) - https://bemo.fi
 
 The API located at https://tokens.swap.coffee/docs
 
@@ -27,7 +27,7 @@ For example, for stTON (Bemo), the staking pool object looks like this:
   "price_change_24h": -0.09,
   "tvl": 917140.097477,
   "holders_count": 18950,
-  "stacking_pool": {
+  "staking_pool": {
     "id": 1,
     "address": "0:cd872fa7c5816052acdf5332260443faec9aacc8c21cca4d92e7f47034d11892",
     "name": "bemo",
