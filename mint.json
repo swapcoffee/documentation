@@ -90,7 +90,8 @@
         "eng/user-guides/claiming",
         "eng/user-guides/staking",
         "eng/user-guides/contests",
-        "eng/user-guides/settings"
+        "eng/user-guides/settings",
+        "eng/ambassador-guides/welcome"
       ]
     },
     {
@@ -114,7 +115,8 @@
         "ru/user-guides/claiming",
         "ru/user-guides/staking",
         "ru/user-guides/contests",
-        "ru/user-guides/settings"
+        "ru/user-guides/settings",
+        "ru/ambassador-guides/welcome"
       ]
     },
     {
