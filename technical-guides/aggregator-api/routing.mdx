@@ -124,6 +124,31 @@ const route = await routingApi.buildRoute({
 });
 ```
 
+## MEV Protection
+
+You can enable MEV protection, which protects user's swaps from the so-called sandwich attacks: a MEV bot buys the token before your trade and sells it immediately afterward, causing you to purchase at a higher price.
+With this option enabled, swaps remain not only maximally profitable but also completely secure.
+
+Note that we take extra fee for each split in the swap. However, these fees will absolutely justify themselves when swapping big amounts of liquidity.
+
+In order to enable MEV protection, you have to pass an extra parameter to the `buildRoute` AND `buildTransactions` methods:
+
+```typescript
+const route = await routingApi.buildRoute({
+    // the rest of the parameters
+    // ...
+    mev_protection: true
+});
+
+const transactions = await routingApi.buildTransactionsV2({
+    // the rest of the parameters
+    // ...
+    mev_protection: true
+})
+```
+
+That's it. MEV protection is enabled and we'll make sure the user gets maximum profit from the swap.
+
 ## Checking transaction results
 
 Along with the transaction built, you receive the `route_id` field. It can be used to check the result of the route's transactions on the **blockchain**.
