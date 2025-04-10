@@ -126,12 +126,14 @@ const route = await routingApi.buildRoute({
 
 ## MEV Protection
 
-You can enable MEV protection, which protects user's swaps from the so-called sandwich attacks: a MEV bot buys the token before your trade and sells it immediately afterward, causing you to purchase at a higher price.
-With this option enabled, swaps remain not only maximally profitable but also completely secure.
+You can enable MEV protection, which protects user's swaps from the so-called sandwich attacks: a MEV bot buys the token before your trade and sells it immediately afterward, causing you to purchase at a higher price. By enabling MEV protection, you can ensure that swaps are not only secure but also maximally profitable.
 
-Note that we take extra fee for each split in the swap. However, these fees will absolutely justify themselves when swapping big amounts of liquidity.
+Note that we charge an additional fee for each split in the swap. However, this fee should be absolutely justified when swapping large amounts of liquidity.
 
-In order to enable MEV protection, you have to pass an extra parameter to the `buildRoute` AND `buildTransactions` methods:
+Be aware that enabling MEV protection will exclude the following DEXes from the routing due to their technical limitations:
+- STON.fi (v1 only)
+
+To enable MEV protection, you have to pass an extra parameters to our API:
 
 ```typescript
 const route = await routingApi.buildRoute({
@@ -147,7 +149,7 @@ const transactions = await routingApi.buildTransactionsV2({
 })
 ```
 
-That's it. MEV protection is enabled and we'll make sure the user gets maximum profit from the swap.
+That's it. MEV protection is enabled, and our system will take care of the rest to maximize the profit from the swap.
 
 ## Checking transaction results
 
