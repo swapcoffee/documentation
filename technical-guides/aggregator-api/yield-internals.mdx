@@ -1,0 +1,227 @@
+---
+title: 'Yield Aggregator'
+description: 'Learn how to integrate with Yield Aggregator to manage liquidity pools and earn rewards'
+icon: 'pickaxe'
+---
+
+# Overview
+
+All operations use a unified **Yield Aggregator Service** API, accessible via [REST API](https://backend.swap.coffee/swagger-ui#/YieldAggregator).
+
+Key features of Yield Aggregator:
+
+1. Upon request, the swap.coffee backend provides information about liquidity pools and DeFi protocols on the TON network.
+2. If the user provides their wallet, the swap.coffee backend retrieves data about the user’s pools.
+3. Users can interact with pools via the API: retrieve pool details, gather information about their position, and perform actions (e.g., adding liquidity).
+4. Users can track the status of their transactions by querying the swap.coffee backend.
+
+## List of Pools
+
+To retrieve the list of all pools in Yield Aggregator, use the `GET /v1/yield/pools` method. This method allows filtering and sorting pools by various parameters, including blockchains, liquidity providers, and more.
+
+### Request Parameters
+
+| Parameter            | Type     | Description                                                                                  | Default Value                      |
+|----------------------|----------|----------------------------------------------------------------------------------------------|------------------------------------|
+| blockchains          | array    | Filter by available blockchains (e.g., `ton`).                                               | If not specified, all supported blockchains are used. |
+| providers            | array    | Filter by pool providers (e.g., `stonfi`).                                                   | If not specified, all providers are used. |
+| trusted              | boolean  | Returns only trusted pools (verified by DEXes or the community).                             | True by default.                   |
+| with_active_boosts   | boolean  | Returns pools with active incentives.                                                        | False by default.                  |
+| with_liquidity_from  | string   | Filter by pools where the user has provided liquidity.                                       | Null by default.                   |
+| search_text          | string   | Search by pool address, token tickers, or token addresses.                                   | Null by default.                   |
+| order                | string   | Field to sort by.                                                                            | TVL by default.                    |
+| descending_order     | boolean  | Sort in descending (true) or ascending (false) order.                                        | True by default.                   |
+| in_groups            | boolean  | Groups pools by liquidity providers.                                                         | False by default.                  |
+| size                 | integer  | Number of pools per page (maximum 100).                                                      | 10 |
+| page                 | integer  | Page number for pagination.                                                                  | 1  |
+
+### The `in_groups` Flag
+
+You can retrieve a preview for the specified parameters for each liquidity provider (or all providers if the `providers` parameter is `null`). To do this, set `in_groups=true` in the request. In this case, the response will contain a set of pool lists for each required liquidity provider (up to 10 entries per provider).
+
+If `in_groups=true`, the `size` and `page` parameters must be **null**.
+
+### Response Structure
+
+The response structure contains an array of entries with the following fields:
+
+| Field        | Type   | Description                          |
+|--------------|--------|--------------------------------------|
+| total_count  | int32  | Total number of pools found for the specified provider. |
+| pools        | array  | List of pools. |
+
+Each element in `pools` consists of:
+
+| Field           | Type   | Description                          |
+|-----------------|--------|--------------------------------------|
+| pool_statistics | object | Trading statistics of the pool.      |
+| pool            | object | Pool data parameterized by the `"@type"` key. |
+
+Possible values for `pool["@type"]`:
+- `dex_pool`, the object is a DEX pool and contains the following fields:
+
+| Field             | Type     | Description                                             |
+|-------------------|----------|---------------------------------------------------------|
+| dex               | string   | Name of the DEX (e.g., `stonfi`).                       |
+| address           | string   | Pool address.                                           |
+| type              | object   | Pool type (e.g., `public`, `private`).                  |
+| amm_type          | object   | AMM type (e.g., `constant_product`).                    |
+| amm_settings      | object   | AMM parameters.                                         |
+| tokens            | array    | List of tokens in the pool.                             |
+| reserves          | double   | Pool reserves.                                          |
+| restrictions      | array    | Token restrictions (minimum and maximum token amounts for swaps). |
+| fees              | object   | Pool fees.                                              |
+| unavailable_until | integer  | Time (in seconds, UTC Unix timestamp) until the pool becomes unavailable. |
+
+The `pool_statistics` object includes the following fields:
+
+| Field       | Type   | Description                              |
+|-------------|--------|------------------------------------------|
+| tvl_usd     | number | Total value locked in USD.               |
+| volume_usd  | number | Trading volume in USD.                   |
+| fee_usd     | number | Pool fees in USD.                        |
+| apr         | number | Total Annual Percentage Rate (APR).            |
+| lp_apr      | number | APR for liquidity providers.             |
+| boost_apr   | number | APR from boosts.                         |
+
+### Example Request
+
+```bash
+    curl -X GET "https://backend.swap.coffee/v1/yield/pools?blockchains=ton&trusted=true&search_text=CES&order=apr&descending_order=true&size=50&page=1"
+```
+
+## Retrieving Pool Information
+
+To retrieve detailed information about a pool, use the `GET /v1/yield/pool/{pool_address}` method.
+
+### Response Structure
+
+The method returns an object with fields:
+
+| Field           | Type   | Description                          |
+|-----------------|--------|--------------------------------------|
+| pool_statistics | object | Trading statistics of the pool.      |
+| pool            | object | Pool data parameterized by the `"@type"` key. |
+
+Possible values for `pool["@type"]`:
+- `dex_pool`, the object is a DEX pool and has the following fields:
+
+| Field        | Type   | Description                          |
+|--------------|--------|--------------------------------------|
+| pool         | object | Core pool data.                      |
+| boosts       | array  | List of active boosts.               |
+| total_supply | string | Total amount of minted LP tokens.    |
+
+Each element in the `boosts` list has the following fields:
+
+| Field                  | Type     | Description                                           | Required |
+|------------------------|----------|-------------------------------------------------------|----------|
+| pool_address           | string   | Address of the pool associated with the boost.        | Yes      |
+| boost_factory          | string   | Address of the boost factory.                         | No       |
+| boost_id               | integer  | Boost identifier.                                     | No       |
+| reward_token           | object   | Reward token.                                         | Yes      |
+| reward_rate_per_second | string   | Reward rate per second.                               | Yes      |
+| start_seconds_unix     | integer  | Boost start time (Unix timestamp, seconds).           | No       |
+| finish_seconds_unix    | integer  | Boost end time (Unix timestamp, seconds).             | Yes      |
+| rewards_per_day_usd    | number   | Daily rewards in USD.                                 | Yes      |
+| apr                    | number   | Annual Percentage Rate (APR) in percentage.           | Yes      |
+| lock_duration_seconds  | integer  | Lock duration for participating in the boost (seconds). | No    |
+
+### Example Request
+
+```bash
+    curl -X GET "https://backend.swap.coffee/v1/yield/pool/EQBqg596nW5TA9cfUePEFGnyw1V0F560v7Qg3KYku5iXU217"
+```
+
+## Retrieving User Position Information
+
+To retrieve detailed information about a user’s position in a pool, use the `GET /v1/yield/pool/{pool_address}/{user_address}` method.
+
+### Response Structure
+
+The method returns an object with fields:
+
+| Field   | Type   | Description                          |
+|---------|--------|--------------------------------------|
+| pool    | object | Pool data parameterized by the `"@type"` key. |
+
+Possible values for `pool["@type"]`:
+- `dex_pool`, the object is a DEX pool and has the following fields:
+
+| Field          | Type   | Description                                           |
+|----------------|--------|-------------------------------------------------------|
+| user_lp_amount | string | Amount of the user’s LP tokens.                       |
+| user_lp_wallet | string | Address of the user’s wallet where LP tokens are stored. |
+| boosts         | array  | Boosts available for claiming.                        |
+
+Each element in the `boosts` list has the following fields:
+
+| Field         | Type   | Description                                           |
+|---------------|--------|-------------------------------------------------------|
+| token         | object | Token associated with the reward.                     |
+| wallet        | string | Address where rewards are stored.                     |
+| type          | object | Type of reward (e.g., `rewards_stonfi`).              |
+| claimed       | string | Amount of tokens already claimed.                     |
+| locked        | string | Amount of locked tokens.                              |
+| available     | string | Amount of tokens available for claiming.              |
+| available_usd | number | Value of available tokens in USD.                     |
+
+### Example Request
+
+```bash
+    curl -X GET "https://backend.swap.coffee/v1/yield/pool/EQBqg596nW5TA9cfUePEFGnyw1V0F560v7Qg3KYku5iXU217/UQAj-RQTlNNwjkuRVYWdfamU0jjvQbH31lkxTw-osulj4tdj"
+```
+
+## User Interaction with a Pool
+
+To add liquidity or withdraw funds, use the `POST /v1/yield/pool/{pool_address}/{user_address}` method.
+
+### Interaction Types
+
+The method supports the following operations, parameterized by the `"@type"` field in the request body:
+- `dex_provide_liquidity`: Add liquidity to the pool.
+- `dex_withdraw_liquidity`: Withdraw liquidity from the pool.
+- `dex_stonfi_lock_staking`: Stake in Ston.fi farming service.
+- `dex_stonfi_withdraw_staking`: Withdraw from staking in Ston.fi.
+
+Each request returns a list of transactions that need to be signed and sent to the blockchain:
+
+| Field     | Type   | Description                          |
+|-----------|--------|--------------------------------------|
+| query_id  | string | Transaction identifier for status tracking. |
+| message   | object | Transaction to be signed and sent.   |
+
+### Example Request
+
+```bash
+    curl -X POST "https://backend.swap.coffee/v1/yield/pool/EQBqg596nW5TA9cfUePEFGnyw1V0F560v7Qg3KYku5iXU217/UQAj-RQTlNNwjkuRVYWdfamU0jjvQbH31lkxTw-osulj4tdj"
+-H "Content-Type: application/json" \\
+  -d '{
+    "@type": "dex_provide_liquidity",
+    "user_wallet": "UQAj-RQTlNNwjkuRVYWdfamU0jjvQbH31lkxTw-osulj4tdj",
+    "asset_1_amount": "1000000000",
+    "asset_2_amount": "2000000000",
+    "min_lp_amount": "123456789"
+  }
+```
+
+## Checking Operation Status
+
+After submitting a transaction, you can check its statuses using the `GET /v1/yield/result` method.
+
+### Response Structure
+
+The method returns an array of transaction statuses:
+- `pending`;
+- `success`;
+- `failed`.
+
+### Example Request
+
+```bash
+    curl -X GET "https://backend.swap.coffee/v1/yield/resut?query_id=123456"
+```
+
+## Useful links
+
+- [SWAGGER API](https://backend.swap.coffee/swagger-ui#/Entity/getPools)
