@@ -85,6 +85,7 @@
         "eng/user-guides/swap",
         "eng/user-guides/limit",
         "eng/user-guides/dca",
+        "eng/user-guides/yield",
         "eng/user-guides/cashback",
         "eng/user-guides/referral",
         "eng/user-guides/claiming",
@@ -110,6 +111,7 @@
         "ru/user-guides/swap",
         "ru/user-guides/limit",
         "ru/user-guides/dca",
+        "ru/user-guides/yield",
         "ru/user-guides/cashback",
         "ru/user-guides/referral",
         "ru/user-guides/claiming",
@@ -138,7 +140,8 @@
             "technical-guides/aggregator-api/routing",
             "technical-guides/aggregator-api/staking-api",
             "technical-guides/aggregator-api/strategy-orders",
-            "technical-guides/aggregator-api/staking-internals"
+            "technical-guides/aggregator-api/staking-internals",
+            "technical-guides/aggregator-api/yield-internals"
           ]
         },
         "technical-guides/tokens-api",
