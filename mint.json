@@ -149,7 +149,7 @@
               "group": "Advanced Configuration",
               "icon": "robot",
               "pages": [
-                "technical-guides/aggregator-widget/advanced/index",
+                "technical-guides/aggregator-widget/advanced/overview",
                 "technical-guides/aggregator-widget/advanced/custom-fee",
                 "technical-guides/aggregator-widget/advanced/ui-based",
                 "technical-guides/aggregator-widget/advanced/tokens",
