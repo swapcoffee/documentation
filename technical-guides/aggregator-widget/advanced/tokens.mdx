@@ -1,0 +1,71 @@
+---
+title: 'Token Configuration'
+description: 'Customize which tokens are first visible and available in the widget.'
+---
+
+You can control which `tokens appear` in the widget UI by using the following **optional parameters**.
+
+> ☝️ **Important** -- All `tokens (Jettons)` passed to either parameter **must be listed on [swap.coffee](https://swap.coffee)** to be recognized and rendered correctly in the widget.
+
+---
+
+## `sendReceiveTokenAddresses`
+
+```typescript
+sendReceiveTokenAddresses?: string[];
+```
+
+ - Defines a **custom list** of **token addresses (Jettons)** that should be available in the `Send` and `Receive` sections of the widget.
+ - Use this when you want to set a `unique pair` of tokens that users can **swap from or to**.
+
+ ```typescript
+ createSwapWidget("#test", {
+   sendReceiveTokenAddresses: [
+     "EQAvlWFDxGF2lXm67y4yzC17wYKD9A0guwPkMs1gOsM__NOT", // SEND -> NOT
+     "EQCl0S4xvoeGeFGijTzicSA8j6GiiugmJW5zxQbZTUntre-1" // RECEIVE -> CES
+   ],
+   otherConfig...
+ });
+```
+
+> 🚧 **Warning** -- If you pass an **invalid token address**, the widget and pair will not render correctly.
+
+## `limitedJettonLists`
+
+```typescript
+limitedJettonLists?: string[];
+```
+
+Provides a **custom list** of `Jetton addresses` that will be used to completely override the default token list in the widget.
+
+```typescript
+createSwapWidget("#test", {
+  limitedJettonLists: [
+    "EQC98_qAmNEptUtPc7W6xdHh_ZHrBUFpw5Ft_IzNU20QAJav", // tsTON
+    "EQBa6Oofc4vQZ1XZLTYRkbX4qWUWBCf0sFBgo0kdxdlw6rqN", // M5
+    "EQAvlWFDxGF2lXm67y4yzC17wYKD9A0guwPkMs1gOsM__NOT", // NOT
+    "EQD0KpcRMh-sKO2z5-vOjgvFjTT58tO-2Nmvxqg5ocFQFtWz"  // FPIBANK
+    // other token addresses ...
+  ],
+  otherConfig...
+});
+```
+
+> 🛑 This setting completely replaces the default token list — use it when you want a hard limit on what's shown.
+
+### Default Assets
+
+By default, the widget always displays assets:
+  - **TON** ``(Toncoin)``
+  - **USDT** ``(Tether USDT on TON)``
+  - **CES** ``(swap.coffee)``
+
+---
+
+These are included automatically, even when no configuration is provided.
+
+### Search for Any Token
+
+Even if a token is not in the list, users can still discover it using the **built-in token search**.
+
+> ✅ As long as the token is listed on [swap.coffee](https://swap.coffee), it can be found.

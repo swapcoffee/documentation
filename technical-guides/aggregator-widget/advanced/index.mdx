@@ -1,0 +1,47 @@
+---
+title: 'Overview'
+description: 'Widget parameters you should know about'
+---
+
+##  Optional Parameters
+
+The parameters listed in this section are **not required** for getting started with the widget.
+
+They exist to give **integrators** the flexibility of widget to their specific needs — such as setup and `customizing referral fees`, start **jetton parameters**, or configure limited **liquidity sources list**.
+
+> ⚠️ Use these options **only when necessary**. By default, the widget works out of the box with minimal setup.
+
+###  UI-Based Settings
+
+| Parameter                    | Type      | Description |
+|------------------------------|-----------|-------------|
+| `firstTokenAmount`           | `number`  | Predefined `first token amount` shown on first load. |
+| `limitDcaVisibility`         | `boolean` | Hides/show **Limited&DCA** related UI elements. |
+
+---
+
+###  Token Properties
+
+| Parameter                        | Type        | Description |
+|----------------------------------|-------------|-------------|
+| `sendReceiveTokenAddresses`     | `string[]`  | List of `token addresses` to be shown in the **Send/Receive** section only. |
+| `limitedJettonLists`            | `string[]`  | Custom list of token `addresses (jettons)` to restrict the widget UI to specific tokens. |
+
+---
+
+###  Fee Logic
+
+| Parameter                              | Type      | Description |
+|----------------------------------------|-----------|-------------|
+| `widgetReferral`   | `string` | Partneer `referral tag`. Needs to setup **custom fee**. |
+| `customFeeSettings`                    | `object`  | Override default **fee logic**. |
+| `customFeeSettings.percentage_fee`     | `number`  | Percentage **fee** in basis points (e.g., `3000` = 3%). |
+| `customFeeSettings.min_percentage_fee_fixed` | `string` | Minimum fee in nano-units (e.g., `500000000`). |
+| `customFeeSettings.max_percentage_fee_fixed` | `string` | Maximum fee in nano-units (e.g., `4000000000`). |
+| `customFeeSettings.fixed_fee` | `string` | Fixed fee in nanoton-units (e.g., `1000000000`). |
+
+### Liquidity Sources
+
+| Parameter                        | Type        | Description |
+|----------------------------------|-------------|-------------|
+| `liquiditySources`               | `string[]`  | Fixed list of `liquidity sources` to be included in the dex routing. |

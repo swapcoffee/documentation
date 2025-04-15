@@ -1,0 +1,51 @@
+---
+title: 'UI-Based Settings'
+description: 'Optional configuration flags that influence how the widget looks on first load.'
+---
+
+These parameters allow you to adjust the **visual behavior** of the `widget` when it first loads. They are helpful to better match your product's flow or `hide features` that may not be relevant to **your users**.
+
+> ⚠️ These parameters are purely visual — they `do not affect the widget's logic`, supported operations, or **API interactions**.
+
+---
+
+## `firstTokenAmount`
+
+```typescript
+firstTokenAmount?: number;
+```
+
+This parameter defines the **pre-filled** token amount in the **input field** when the widget is `first rendered`.
+
+It’s useful in cases where you want to give users a `ready-to-go` value, especially for preconfigured flows or **one-click experiences**.
+
+```typescript
+createSwapWidget("#test", {
+    firstTokenAmount: 50,
+    otherConfig...,
+});
+```
+
+> 💡 If not set, the input field will be 0 by default.
+
+## `limitDcaVisibility`
+
+```typescript
+limitDcaVisibility?: boolean; // default: true
+```
+
+This **parameter** controls the visibility of UI components related to:
+
+- `Limit orders`
+- `DCA (Dollar-Cost Averaging)`
+
+By default, these modules are **visible**. If your use case `doesn't require those features`, you can explicitly hide them by setting this flag to **false**.
+
+```typescript
+createSwapWidget("#test", {
+    limitDcaVisibility: false, // Hides Limit & DCA modules
+    otherConfig...,
+});
+```
+
+> 💡 Default value is true, meaning the Limit & DCA UI elements are always shown unless explicitly disabled.

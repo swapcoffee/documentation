@@ -97,9 +97,7 @@
     {
       "group": "WhitePaper",
       "icon": "bookmark",
-      "pages": [
-        "eng/white-eng"
-      ]
+      "pages": ["eng/white-eng"]
     },
     {
       "group": "User Guides",
@@ -122,9 +120,7 @@
     {
       "group": "WhitePaper",
       "icon": "bookmark",
-      "pages": [
-        "ru/white"
-      ]
+      "pages": ["ru/white"]
     },
     {
       "group": "Technical Guides",
@@ -148,8 +144,18 @@
           "pages": [
             "technical-guides/aggregator-widget/introduction",
             "technical-guides/aggregator-widget/configuration",
-            "technical-guides/aggregator-widget/advanced",
-            "technical-guides/aggregator-widget/events-feature"
+            "technical-guides/aggregator-widget/events-feature",
+            {
+              "group": "Advanced Configuration",
+              "icon": "robot",
+              "pages": [
+                "technical-guides/aggregator-widget/advanced/index",
+                "technical-guides/aggregator-widget/advanced/custom-fee",
+                "technical-guides/aggregator-widget/advanced/ui-based",
+                "technical-guides/aggregator-widget/advanced/tokens",
+                "technical-guides/aggregator-widget/advanced/liquidity-sources"
+              ]
+            }
           ]
         },
         {
@@ -169,10 +175,7 @@
     {
       "group": "Legal",
       "icon": "gavel",
-      "pages": [
-        "legal/tos",
-        "legal/policy"
-      ]
+      "pages": ["legal/tos", "legal/policy"]
     }
   ],
   "footerSocials": {
