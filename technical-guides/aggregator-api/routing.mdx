@@ -124,6 +124,73 @@ const route = await routingApi.buildRoute({
 });
 ```
 
+## Multi-asset swaps
+
+Sometimes you might want to exchange multiple input assets for a single output asset in one operation. A common use case is swapping various tokens from your balance into a primary asset like TON or USDT.
+
+swap.coffee supports this scenario through **Multi-asset swap** feature.
+
+To use this feature via sdk, you'll need `buildMultiAssetRoute` function of the `RoutingApi`. This function is similar to its single-asset counterpart (`buildRoute`), but designed for multiple inputs.
+
+Here are the key differences from `buildRoute`:
+1. Input parameters:
+    - Instead of `input_token: ApiTokenAddress` and `input_amount: number`, `buildMultiAssetRoute` accepts a single `input_assets` parameter.
+    - `input_assets` is an array of `ApiMultiAssetInputAsset` object, where each one has the following structure: \
+      `{ asset: ApiTokenAddress, amount: number }` \
+      This allows you to specify each input token and its corresponding amount.
+    - `buildMultiAssetRoute` does not support `output_amount` field.
+2. Return value structure:
+    - `buildMultiAssetRoute` returns an `ApiMultiAssetRoute` object.
+    - The `ApiRoute` object (returned by `buildRoute`) describes a single swap operation and contains fields like `input_token`, `output_token`, `input_amount`, `output_amount`, and `paths`.
+    - The `ApiMultiAssetRoute` object (returned by `buildMultiAssetRoute`) aggregates information for the multi-asset swap:
+        - It contains a `routes: ApiRoute[]` field. Each element here is an `ApiRoute` object, representing one part of the multi-asset swap.
+        - It contains an `output_token: ApiToken` field, representing a single output token of the multi-asset swap.
+        - It provides aggregated totals like `total_output_amount`, `total_savings`, `total_estimated_cashback_usd`, etc., summing up corresponding values from all individual routes.
+
+Here's how you can use `buildMultiAssetRoute` to swap both TON and USDT for CES:
+
+```typescript
+import {ApiTokenAddress, RoutingApi} from "@swap-coffee/sdk";
+
+const connector = await setupTonConnect()
+const routingApi = new RoutingApi()
+
+const assetTon: ApiTokenAddress = {
+    blockchain: "ton",
+    address: "native" // stands for TON
+}
+const assetUsdt: ApiTokenAddress = {
+    blockchain: "ton",
+    address: "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs" // USDT
+}
+const assetOut: ApiTokenAddress = {
+    blockchain: "ton",
+    address: "EQCl0S4xvoeGeFGijTzicSA8j6GiiugmJW5zxQbZTUntre-1" // CES
+}
+
+// let's build an optimal route
+const route = await routingApi.buildMultiAssetRoute({
+    input_assets: [
+        {
+            token: assetTon,
+            amount: 1.0
+        },
+        {
+            token: assetUsdt,
+            amount: 2.0
+        }
+    ],
+    output_asset: assetOut
+})
+
+// then we can build transactions payload
+const transactions = await routingApi.buildTransactionsV2({
+    sender_address: connector.account?.address!!, // address of user's wallet
+    slippage: 0.1, // 10% slippage
+    paths: route.data.routes.flatMap(it => it.paths), // collect all splits
+})
+```
+
 ## MEV Protection
 
 You can enable MEV protection, which protects user's swaps from the so-called sandwich attacks: a MEV bot buys the token before your trade and sells it immediately afterward, causing you to purchase at a higher price. By enabling MEV protection, you can ensure that swaps are not only secure but also maximally profitable.
