@@ -635,6 +635,15 @@ Must be sent by a user to the **Factory** in order to create new vault.
 | query_id      | Non-unique identifier which you may specify to track this transaction |
 | asset         | Asset for which new vault must be created                             |
 
+#### Notification
+
+```tl-b
+notification#c0ffee36 query_id:uint64 body:^Cell = Notification;
+```
+
+Serves as a wrapper for any outgoing messages proposed by transaction initiator as a marker of operation
+completion status. Therefore, is being sent by **Vault**s or **Pool**s after operation completes.
+
 ### Inter-contract communication
 
 #### SwapInternal

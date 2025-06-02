@@ -9,8 +9,6 @@ All the methods of the contracts that may be invoked off-chain are described on 
 
 ### get_vault_address
 
-Signature:
-
 ```func
 (slice, int) get_vault_address(slice asset)
 ```
@@ -25,52 +23,62 @@ Properties:
 
 ### get_pool_address
 
-Signature:
-
 ```func
-(slice, int) get_pool_address(slice asset1, slice asset2, int amm)
+(slice, int) get_pool_address(
+  slice asset1,
+  slice asset2,
+  int amm,
+  cell amm_settings
+)
 ```
 
 Properties:
 
-| Type         | Name   | Description                                                                      |
-|--------------|--------|----------------------------------------------------------------------------------|
-| Argument     | asset1 | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                      |
-| Argument     | asset2 | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                      |
-| Argument     | amm    | Serialized [AMM](/technical-guides/dex/tlb-schemes#amm)                          |
-| Return Value | 1st    | Serialized `MsgAddressInt` for the **Pool** of the given asset pair and amm type |
-| Return Value | 2nd    | Hash part of the address returned before                                         |
+| Type         | Name         | Description                                                                      |
+|--------------|--------------|----------------------------------------------------------------------------------|
+| Argument     | asset1       | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                      |
+| Argument     | asset2       | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                      |
+| Argument     | amm          | Serialized [AMM](/technical-guides/dex/tlb-schemes#amm)                          |
+| Argument     | amm_settings | Serialized [AMM Settings](/technical-guides/dex/tlb-schemes#amm-settings)        |
+| Return Value | 1st          | Serialized `MsgAddressInt` for the **Pool** of the given asset pair and amm type |
+| Return Value | 2nd          | Hash part of the address returned before                                         |
+
+### get_pool_address_no_settings
+
+```func
+(slice, int) get_pool_address_no_settings(slice asset1, slice asset2, int amm)
+```
+
+Same as the previous, except there are no settings.
 
 ### get_pool_creator_address
-
-Signature:
 
 ```func
 (slice, int) get_pool_creator_address(
   slice owner,
   slice asset1,
   slice asset2,
-  int amm
+  int amm,
+  cell amm_settings
 )
 ```
 
 Properties:
 
-| Type         | Name   | Description                                                                                                                  |
-|--------------|--------|------------------------------------------------------------------------------------------------------------------------------|
-| Argument     | owner  | Serialized `MsgAddressInt` of the **PoolCreator**'s owner                                                                    |
-| Argument     | asset1 | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                                                                  |
-| Argument     | asset2 | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                                                                  |
-| Argument     | amm    | Serialized [AMM](/technical-guides/dex/tlb-schemes#amm)                                                                      |
-| Return Value | 1st    | Serialized `MsgAddressInt` for the **PoolCreator** of the given asset pair and amm type which is owned by the specified user |
-| Return Value | 2nd    | Hash part of the address returned before                                                                                     |
+| Type         | Name         | Description                                                                                                                  |
+|--------------|--------------|------------------------------------------------------------------------------------------------------------------------------|
+| Argument     | owner        | Serialized `MsgAddressInt` of the **PoolCreator**'s owner                                                                    |
+| Argument     | asset1       | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                                                                  |
+| Argument     | asset2       | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                                                                  |
+| Argument     | amm          | Serialized [AMM](/technical-guides/dex/tlb-schemes#amm)                                                                      |
+| Argument     | amm_settings | Serialized [AMM Settings](/technical-guides/dex/tlb-schemes#amm-settings)                                                    |
+| Return Value | 1st          | Serialized `MsgAddressInt` for the **PoolCreator** of the given asset pair and amm type which is owned by the specified user |
+| Return Value | 2nd          | Hash part of the address returned before                                                                                     |
 
-### get_liquidity_depository_address
-
-Signature:
+### get_pool_creator_address_no_settings
 
 ```func
-(slice, int) get_liquidity_depository_address(
+(slice, int) get_pool_creator_address_no_settings(
   slice owner,
   slice asset1,
   slice asset2,
@@ -78,22 +86,60 @@ Signature:
 )
 ```
 
+Same as the previous, except there are no settings.
+
+### get_liquidity_depository_address
+
+```func
+(slice, int) get_liquidity_depository_address(
+  slice owner,
+  slice asset1,
+  slice asset2,
+  int amm,
+  cell amm_settings
+)
+```
+
 Properties:
 
-| Type         | Name   | Description                                                                                                                          |
-|--------------|--------|--------------------------------------------------------------------------------------------------------------------------------------|
-| Argument     | owner  | Serialized `MsgAddressInt` of the **LiquidityDepository**'s owner                                                                    |
-| Argument     | asset1 | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                                                                          |
-| Argument     | asset2 | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                                                                          |
-| Argument     | amm    | Serialized [AMM](/technical-guides/dex/tlb-schemes#amm)                                                                              |
-| Return Value | 1st    | Serialized `MsgAddressInt` for the **LiquidityDepository** of the given asset pair and amm type which is owned by the specified user |
-| Return Value | 2nd    | Hash part of the address returned before                                                                                             |
+| Type         | Name         | Description                                                                                                                          |
+|--------------|--------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| Argument     | owner        | Serialized `MsgAddressInt` of the **LiquidityDepository**'s owner                                                                    |
+| Argument     | asset1       | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                                                                          |
+| Argument     | asset2       | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset)                                                                          |
+| Argument     | amm          | Serialized [AMM](/technical-guides/dex/tlb-schemes#amm)                                                                              |
+| Argument     | amm_settings | Serialized [AMM Settings](/technical-guides/dex/tlb-schemes#amm-settings)                                                            |
+| Return Value | 1st          | Serialized `MsgAddressInt` for the **LiquidityDepository** of the given asset pair and amm type which is owned by the specified user |
+| Return Value | 2nd          | Hash part of the address returned before                                                                                             |
+
+### get_liquidity_depository_address_no_settings
+
+```func
+(slice, int) get_liquidity_depository_address_no_settings(
+  slice owner,
+  slice asset1,
+  slice asset2,
+  int amm
+)
+```
+
+Same as the previous, except there are no settings.
+
+### get_admin_address
+
+```func
+slice get_admin_address()
+```
+
+Properties:
+
+| Type         | Name | Description                                                   |
+|--------------|------|---------------------------------------------------------------|
+| Return Value | 1st  | Serialized `MsgAddressInt` for the DEX administrative account |
 
 ## Vault
 
 ### get_asset
-
-Signature:
 
 ```func
 slice get_asset()
@@ -106,8 +152,6 @@ Properties:
 | Return Value | 1st  | Serialized [Asset](/technical-guides/dex/tlb-schemes#asset) to which this vault corresponds |
 
 ### is_active
-
-Signature:
 
 ```func
 int is_active()
@@ -135,26 +179,25 @@ therefore specifics about are accessible by the link.
 
 ### get_pool_data
 
-Signature:
-
 ```func
-(int, slice, slice, int, int, int, int, cell, int, int) get_pool_data()
+(int, slice, slice, int, cell, int, int, int, int, int, int) get_pool_data()
 ```
 
 Properties:
 
-| Type         | Name | Description                                                                     |
-|--------------|------|---------------------------------------------------------------------------------|
-| Return Value | 1st  | Version of the pool code, starts at 1                                           |
-| Return Value | 2nd  | Serialized first [Asset](/technical-guides/dex/tlb-schemes#asset) of this pool  |
-| Return Value | 3rd  | Serialized second [Asset](/technical-guides/dex/tlb-schemes#asset) of this pool |
-| Return Value | 4th  | Serialized [AMM](/technical-guides/dex/tlb-schemes#amm) of this pool            |
-| Return Value | 5th  | 0 if this pool is not active, -1 otherwise                                      |
-| Return Value | 6th  | Reserves of the first asset of this pool                                        |
-| Return Value | 7th  | Reserves of the second asset of this pool                                       |
-| Return Value | 8th  | Cell (possibly null) containing AMM strategy settings                           |
-| Return Value | 9th  | Protocol fee nominator\*                                                        |
-| Return Value | 10th | LP fee nominator\*                                                              |
+| Type         | Name | Description                                                                            |
+|--------------|------|----------------------------------------------------------------------------------------|
+| Return Value | 1st  | Version of the pool code, starts at 1                                                  |
+| Return Value | 2nd  | Serialized first [Asset](/technical-guides/dex/tlb-schemes#asset) of this pool         |
+| Return Value | 3rd  | Serialized second [Asset](/technical-guides/dex/tlb-schemes#asset) of this pool        |
+| Return Value | 4th  | Serialized [AMM](/technical-guides/dex/tlb-schemes#amm) of this pool                   |
+| Return Value | 5th  | Serialized [AMM Settings](/technical-guides/dex/tlb-schemes#amm-settings) of this pool |
+| Return Value | 6th  | 0 if this pool is not active, -1 otherwise                                             |
+| Return Value | 7th  | Reserves of the first asset of this pool                                               |
+| Return Value | 8th  | Reserves of the second asset of this pool                                              |
+| Return Value | 9th  | Total supply of LP tokens                                                              |
+| Return Value | 10th | Protocol fee nominator\*                                                               |
+| Return Value | 11th | LP fee nominator\*                                                                     |
 
 \* Fees are being withdrawn from swap operations only (therefore liquidity provisioning/withdrawal is fee).
 They are always charged from the input asset of the swap, and they're denoted by the nominators within the pool storage.
@@ -162,8 +205,6 @@ Fees nominators are non-negative integers less than `max_nominator = 10000`.
 Denominator for fees is a constant equal to `1000000`.
 
 ### estimate_swap_amount
-
-Signature:
 
 ```func
 (int, int) estimate_swap_amount(slice asset, int amount)
@@ -180,8 +221,6 @@ Properties:
 
 ### estimate_liquidity_withdraw_amount
 
-Signature:
-
 ```func
 (int, int) estimate_liquidity_withdraw_amount(int lp_amount)
 ```
@@ -195,8 +234,6 @@ Properties:
 | Return Value | 2nd       | Amount of pool's second asset to be withdrawn |
 
 ### estimate_liquidity_deposit_amount
-
-Signature:
 
 ```func
 (int, int, int, int) estimate_liquidity_deposit_amount(
