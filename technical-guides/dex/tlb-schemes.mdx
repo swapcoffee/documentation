@@ -346,7 +346,7 @@ Must be sent by user to the **Native Vault** to initiate swap transaction.
 swap_jetton#c0ffee10 _:SwapStepParams params:^SwapParams = SwapJetton;
 ```
 
-Must be sent by user to the corresponding **Jetton Vault** as a custom payload of a jetton-transfer message to initiate swap transaction.
+Must be sent by user to the corresponding **Jetton Vault** as a forward payload of a jetton-transfer message to initiate swap transaction.
 
 Query ID, jetton and it's amount are being determined internally from jetton transfer notification and therefore mustn't be present here.
 
@@ -438,7 +438,7 @@ create_pool_jetton#c0ffee11 params:PoolParams
 ```
 
 Must be sent by user to the corresponding **Jetton Vault** as a part of pool creation (and it's initial liquidity provisioning).
-This message must be included as a custom payload to the jetton-transfer message.
+This message must be included as a forward payload to the jetton-transfer message.
 
 Query ID, jetton and it's amount are being determined internally from jetton transfer notification and therefore mustn't be present here.
 
@@ -488,7 +488,7 @@ deposit_liquidity_jetton#c0ffee12 params:DepositLiquidityParams
 ```
 
 Must be sent by user to the corresponding **Jetton Vault** as a part of liquidity provisioning process.
-This message must be included as a custom payload to the jetton-transfer message.
+This message must be included as a forward payload to the jetton-transfer message.
 
 Query ID, jetton and it's amount are being determined internally from jetton transfer notification and therefore mustn't be present here.
 
