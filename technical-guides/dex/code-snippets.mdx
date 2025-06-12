@@ -315,11 +315,11 @@ export async function run(provider: NetworkProvider) {
         .storeMaybeRef(null) // no extra settings
         .storeMaybeRef(null) // no notifications
         .endCell()
-    await sendCreatePool(provider, poolParamsCell, depositLiquidityParamsCell, vault1Address, asset1, asset1Amount)
-    await sendCreatePool(provider, poolParamsCell, depositLiquidityParamsCell, vault2Address, asset2, asset2Amount)
+    await sendProvideLiquidity(provider, poolParamsCell, depositLiquidityParamsCell, vault1Address, asset1, asset1Amount)
+    await sendProvideLiquidity(provider, poolParamsCell, depositLiquidityParamsCell, vault2Address, asset2, asset2Amount)
 }
 
-async function sendCreatePool(
+async function sendProvideLiquidity(
     provider: NetworkProvider,
     poolParams: Cell,
     depositLiquidityParams: Cell,
