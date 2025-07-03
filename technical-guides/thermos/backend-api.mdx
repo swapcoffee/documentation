@@ -1,0 +1,380 @@
+---
+title: 'Thermos Market API'
+description: 'Technical documentation for interacting with Thermos Market API'
+icon: 'gear'
+---
+## First Steps
+
+To get started with the Thermos Market API, you should first obtain an `API token` and provide `Telegram User ID` which will be used to identify you in the system.
+
+You can do this by contacting us via [Telegram](https://t.me/micronovax).
+
+API token simplifies your integration with the Thermos Market API and allows you to perform actions without carrying about authentication with Telegram's `initData`.
+The basic rate limit is two requests per second, but you can request a higher limit if needed by contacting us.
+
+A detailed description of the API can be found in the [Swagger UI](https://backend.thermos.gifts/docs).
+
+## Authentication
+
+To authenticate your requests, you need to obtain a JWT token from your API token by calling the following endpoint:
+
+```bash
+POST https://backend.thermos.gifts/api/v1/auth/api-token?api_token={API_TOKEN}
+```
+
+You should replace `{API_TOKEN}` with your actual API token.
+
+The response will contain a JWT token that you can use to authenticate your requests to the Thermos Market API.
+JWT token is valid for 24 hours and should be refreshed periodically by calling the same endpoint.
+
+```json
+{
+  "account": {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "wallet_address": "string",
+    "telegram_user_id": 0,
+    "referral_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "created_at": "2025-07-03T15:42:59.502Z",
+    "total_refshare": 0,
+    "total_cashback": 0,
+    "language_code": "string",
+    "total_balance": "string",
+    "effective_balance": "string"
+  },
+  "token": "string"
+}
+```
+
+A quick breakdown of the response:
+- `account`: Contains information about your account, such as `id`, `telegram_user_id`, and other details.
+- `token`: The JWT token that you can use to authenticate your requests.
+
+`effective_balance` is the balance that is available for use in the Thermos Market. It may differ from `total_balance` due to various factors such as pending transactions or locked funds.
+
+Well done! Now you can use the JWT token to authenticate your requests to other Thermos Market API endpoints. 🚀
+
+## Fees
+
+The Thermos Market API does not charge any fees for using its endpoints. However, you should be aware that some actions, such as buying or withdrawing gifts, may incur fees in the form of marketplace fees.
+So, the following actions incur fees:
+
+### Buying a gift
+
+When you buy a gift, the Thermos Market charges a marketplace fee `0.1 TON` for each gift you buy. This fee is deducted from your account balance.
+When you withdraw a gift or buy it for another user, the fee is increased to `0.2 TON` for each gift.
+
+### Withdrawing a gift
+
+When you withdraw a gift from your account, the Thermos Market charges a fee of `0.1 TON` for each gift you withdraw. This fee is deducted from your account balance.
+
+### Selling a gift
+
+When you sell a gift, the Thermos Market charges a marketplace fee of `0.1 TON` for each gift you sell. This fee is deducted from your account.
+
+Also, when you `cancel a sale`, the Thermos Market charges a fee of `0.1 TON` for each gift you cancel.
+
+### Internal gift transfer
+
+When you transfer a gift to another user, it does not incur any fees. However, if the recipient is not registered in the Thermos Market, the gift will be registered to their account, and they will be able to claim it later for the same fee of `0.1 TON`.
+
+## The Task API
+
+Almost each actions in the API such as buying, selling, transferring the gift responds with the same structure of the `TaskResponseMultiple` object.
+For example, let's say you want to buy a gift, the API will return a `TaskResponseMultiple` object that contains information about the task and its status.
+
+```
+POST https://backend.thermos.gifts/api/v1/gifts/buy
+Content-Type: application/json
+```
+
+```json
+{
+  "gifts": [
+    {
+      "external_id": "<obtained from catalog API>",
+      "market_source": "TONNEL",
+      "action": {
+        "type": "KEEP"
+      }
+    }
+  ]
+}
+```
+
+In case of success, the API will return a `TaskResponseMultiple` object that contains a list of tasks.
+
+```json
+{
+  "type": "multiple",
+  "task_id": "string",
+  "sub_tasks": [
+    {
+      "type": "single",
+      "state": "STARTED",
+      "error_message": "string",
+      "task_id": "string"
+    }
+  ],
+  "combined_state": "STARTED"
+}
+```
+
+A key difference between `TaskResponseMultiple` and `TaskResponseSingle` is that the former contains a list of tasks, while the latter contains a single task.
+A `TaskResponseMultiple` is used when you perform an action that involves multiple tasks, such as buying multiple gifts at once. It also contains a `combined_state` field that indicates the overall state of the tasks.
+
+To check the status of a task, you can use the following endpoint:
+
+```
+GET https://backend.thermos.gifts/api/v1/tasks/{task_id}
+```
+
+The `{task_id}` should be replaced with the actual ID of the task you want to check. It can be id of a single task or a combined task.
+As a response, you will receive the same `TaskResponseSingle` or `TaskResponseMultiple` object, depending on the type of the task.
+
+## Task States
+
+The task can have the following states:
+- `STARTED` - the task is in progress
+- `FAILURE` - the task has failed
+- `SUCCESS` - the task has completed successfully
+
+In case of failure, the *optional* `error_message` field will contain a description of the error that occurred during the task execution.
+
+
+## Balance Deposits
+
+To deposit funds to your account, you need to retrieve the deposit address using the following endpoint:
+
+```GET https://backend.thermos.gifts/api/v1/balance/deposit?currency=TON```
+
+The `currency` parameter supports only `TON` at the moment.
+
+The response will contain the deposit address and the minimum deposit amount:
+
+```json
+{
+  "address": "EQD5...5Q",
+  "memo": "string"
+}
+```
+The deposit address is stay the same for each user, only *memo* is unique for each account.
+The `memo` field is used to identify your deposit and should be included in the transaction when sending funds to the deposit address.
+
+To do actual deposit, you need to send a transaction to the deposit address with the specified `memo` and the amount of TON you want to deposit.
+
+## Balance Withdrawals
+
+To withdraw funds from your account, you can use the following endpoint:
+
+```
+POST https://backend.thermos.gifts/api/v1/balance/withdraw
+```
+```json
+{
+  "amount": 100000000,
+  "destination": "string"
+}
+```
+
+The `amount` parameter is the amount of TON you want to withdraw, specified in `nanotons` (1 TON = 1,000,000,000 nanotons).
+
+Currently, there is a fee of *0.1* TON for each withdrawal, so make sure you have enough balance to cover the fee.
+
+The `destination` parameter is the address where you want to withdraw your funds. It can be any valid TON address.
+
+In case of success, the API will return an ID of withdrawal request
+
+```json
+{
+  "id": 121
+}
+```
+
+To check the status of your withdrawal request, you can use the following endpoint:
+
+```
+GET https://backend.thermos.gifts/api/v1/balance/withdraw/status/{withdarawal_id}
+```
+
+```json
+{
+  "status": "PENDING"
+}
+```
+
+The `status` field can have the following values:
+- `PENDING` - the withdrawal request is pending and has not been processed yet
+- `PROCESSING` - the withdrawal request is being processed
+- `PROCESSED` - the withdrawal request has been processed successfully
+- `FAILED` - the withdrawal request has failed
+
+## Deposit a Gift
+
+To deposit a gift to your account, you must send it via Telegram API to the [@thermos_vault](https://t.me/thermos_vault) account.
+Note that sender's Telegram user ID must match the one you provided when getting the API token. Otherwise, you can lose your gift.
+
+To check if the gift was deposited successfully, you can use the following endpoint:
+
+```
+GET https://backend.thermos.gifts/api/v1/gifts/me/owned/{unique_name}
+```
+
+`unique_name` is the unique name of the gift you want to check.
+It contains the name of gift collection and its number in it (e.g. `deskcalendar-1212`).
+
+## Buy a Gift
+
+To buy a gift, you should first retrieve the gift external ID from the catalog API.
+If you already have the external ID, you can use the following endpoint to buy the gift:
+
+```
+POST https://backend.thermos.gifts/api/v1/gifts/buy
+```
+
+```json
+{
+  "gifts": [
+    {
+      "external_id": "<obtained from catalog API>",
+      "market_source": "TONNEL",
+      "action": {
+        "type": "KEEP"
+      }
+    }
+  ]
+}
+```
+
+Let's break down the request body:
+
+- `gifts`: An array of gifts you want to buy. Each gift should have the following properties:
+- `external_id`: The unique identifier of the gift in the catalog.
+- `market_source`: The source of the market where the gift is listed (e.g., `TONNEL`, `PORTALS`, `MRKT`).
+
+The `action` field specifies what to do with the gift after buying it. The `type` can be one of the following:
+
+- `KEEP`: Keep the gift in your account. No additional fields are required.
+- `WITHDRAW_OTHER`: Withdraw the gift to another user's account. You should also provide `recipient_telegram_id` and `anonymous` fields.
+
+If Thermos Market is not able to transfer the gift to the recipient, it will register this account as a gift owner and the recipient will be able to claim it later.
+
+The API will return a `TaskResponseMultiple` object that contains information about the task and its status. It is described in the [Task API](#the-task-api) section.
+
+Note that you can buy multiple gifts at once by adding them to the `gifts` array. Up to 20 gifts can be bought in a single request.
+
+
+## Withdraw a Gift
+
+To withdraw a gift from your account, you can use the following endpoint:
+
+```
+POST https://backend.thermos.gifts/api/v1/gifts/transfer
+```
+
+```json
+{
+  "owned_gift_ids": [
+    "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  ]
+}
+```
+
+The `owned_gift_ids` parameter is an array of gift IDs that you want to withdraw. You can find this ID in [GET /gifts/me](https://backend.thermos.gifts/docs#/Gifts/get_account_gifts_api_v1_gifts_me_get) endpoint.
+
+The API will return a `TaskResponseMultiple` object that contains information about the task and its status. It is described in the [Task API](#the-task-api) section.
+
+
+## Internal Gift Transfer
+
+To transfer a gift to another Thermos user, you can use the following endpoint:
+
+```
+POST https://backend.thermos.gifts/api/v1/gifts/assign
+```
+
+```json
+{
+  "owned_gift_ids": [
+    "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  ],
+  "recipient_telegram_id": 1,
+  "init_data": "string",
+  "from_widget": false,
+  "anonymous": false
+}
+```
+
+The `owned_gift_ids` parameter is an array of gift IDs that you want to transfer. You can find this ID in [GET /gifts/me](https://backend.thermos.gifts/docs#/Gifts/get_account_gifts_api_v1_gifts_me_get) endpoint.
+
+The `recipient_telegram_id` parameter is the Telegram user ID of the recipient.
+
+The `init_data` parameter is not necessary for transfers via API, so you can leave it null.
+
+The `from_widget` parameter is used to indicate whether the transfer is initiated from a widget or not. It is set to `false` by default. Used along with `init_data` to identify the recipient in the system.
+
+The `anonymous` parameter is used to indicate whether the transfer is anonymous or not. If set to `true`, the recipient will not see who sent the gift.
+
+The API will return a `TaskResponseMultiple` object that contains information about the task and its status. It is described in the [Task API](#the-task-api) section.
+
+If the recipient is not registered in the Thermos Market, the gift will be registered to their account, and they will be able to claim it later.
+
+
+## Sell a Gift
+
+To sell a gift, you can use the following endpoint:
+
+```
+POST https://backend.thermos.gifts/api/v1/gifts/sell
+```
+
+```json
+{
+  "gifts": [
+    {
+      "price": 0,
+      "owned_gift_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "market_source": "TONNEL"
+    }
+  ]
+}
+```
+Price is specified in nanotons (1 TON = 1,000,000,000 nanotons). It should be greater than the minimal market price for the gift.
+
+Currently, there is the following minimal market price for the gift:
+- `TONNEL` - 2 TON
+- `PORTALS` - 0.5 TON
+
+The `gifts` parameter is an array of gifts you want to sell. Each gift should have the following properties:
+
+- `price`: The price of the gift in nanotons. It should be greater than 0.
+- `owned_gift_id`: The ID of the gift you want to sell. You can find this ID in [GET /gifts/me](https://backend.thermos.gifts/docs#/Gifts/get_account_gifts_api_v1_gifts_me_get) endpoint.
+- `market_source`: The source of the market where the gift is listed (e.g., `TONNEL`, `PORTALS`, `MRKT`).
+
+The API will return a `TaskResponseMultiple` object that contains information about the task and its status. It is described in the [Task API](#the-task-api) section.
+
+After the gift is listed for sale, you can check its status using the following endpoint:
+
+```
+GET https://backend.thermos.gifts/api/v1/gifts/me/on-sale
+```
+
+This endpoint will return a list of gifts that are currently listed for sale, along with their prices and other details.
+
+
+### Cancel a Sale
+
+To cancel a sale of a gift, you can use the following endpoint:
+
+```
+POST https://backend.thermos.gifts/api/v1/gifts/cancel-sale
+```
+
+```json
+{
+  "sale_gift_ids": [
+    "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  ]
+}
+```
+
+The `sale_gift_ids` parameter is an array of gift IDs that you want to cancel the sale for. You can find this ID in [GET /gifts/me/on-sale](https://backend.thermos.gifts/docs#/Gifts/get_account_gifts_api_v1_gifts_me_on_sale_get) endpoint.
