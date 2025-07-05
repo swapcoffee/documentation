@@ -14,6 +14,8 @@ The basic rate limit is two requests per second, but you can request a higher li
 
 A detailed description of the API can be found in the [Swagger UI](https://backend.thermos.gifts/docs).
 
+⚠️ **Note**: The Thermos Market API is currently in beta and may change frequently. We recommend checking the [Swagger UI](https://backend.thermos.gifts/docs) for the latest version of the API.
+
 ## Authentication
 
 To authenticate your requests, you need to obtain a JWT token from your API token by calling the following endpoint:
@@ -75,7 +77,7 @@ Also, when you `cancel a sale`, the Thermos Market charges a fee of `0.1 TON` fo
 
 ### Internal gift transfer
 
-When you transfer a gift to another user, it does not incur any fees. However, if the recipient is not registered in the Thermos Market, the gift will be registered to their account, and they will be able to claim it later for the same fee of `0.1 TON`.
+When you transfer a gift to another user, it does not incur any fees. However, if the recipient is not registered in the Thermos Market, the operation will be bounced back and the gift will stay in your account.
 
 ## The Task API
 
@@ -256,6 +258,11 @@ The `action` field specifies what to do with the gift after buying it. The `type
 - `KEEP`: Keep the gift in your account. No additional fields are required.
 - `WITHDRAW_OTHER`: Withdraw the gift to another user's account. You should also provide `recipient_telegram_id` and `anonymous` fields.
 
+Note, that the `WITHDRAW_OTHER` also have `keep_on_balance` field that indicates whether to keep the gift on recipient's Thermos balance or withdraw it to their Telegram account.
+
+If set to `false` there is an additional fee of `0.1 TON` for each gift, otherwise there is no fee for the gift withdrawal due to gift will remain on Thermos balance and transferred internally.
+If there is an error during the gift transfer, your gift will remain in your account.
+
 If Thermos Market is not able to transfer the gift to the recipient, it will register this account as a gift owner and the recipient will be able to claim it later.
 
 The API will return a `TaskResponseMultiple` object that contains information about the task and its status. It is described in the [Task API](#the-task-api) section.
@@ -298,8 +305,6 @@ POST https://backend.thermos.gifts/api/v1/gifts/assign
     "3fa85f64-5717-4562-b3fc-2c963f66afa6"
   ],
   "recipient_telegram_id": 1,
-  "init_data": "string",
-  "from_widget": false,
   "anonymous": false
 }
 ```
@@ -307,10 +312,6 @@ POST https://backend.thermos.gifts/api/v1/gifts/assign
 The `owned_gift_ids` parameter is an array of gift IDs that you want to transfer. You can find this ID in [GET /gifts/me](https://backend.thermos.gifts/docs#/Gifts/get_account_gifts_api_v1_gifts_me_get) endpoint.
 
 The `recipient_telegram_id` parameter is the Telegram user ID of the recipient.
-
-The `init_data` parameter is not necessary for transfers via API, so you can leave it null.
-
-The `from_widget` parameter is used to indicate whether the transfer is initiated from a widget or not. It is set to `false` by default. Used along with `init_data` to identify the recipient in the system.
 
 The `anonymous` parameter is used to indicate whether the transfer is anonymous or not. If set to `true`, the recipient will not see who sent the gift.
 
