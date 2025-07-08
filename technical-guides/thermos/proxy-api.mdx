@@ -1,0 +1,308 @@
+---
+title: 'Thermos Proxy API'
+description: 'Technical documentation for interacting with Thermos Proxy API'
+icon: 'magnifying-glass'
+---
+## First Steps
+
+A detailed description of the API can be found in the [Stoplight UI](https://proxy.thermos.gifts/docs).
+
+⚠️ **Note**: The Thermos Proxy API is currently in beta and may change frequently. We recommend checking the [Stoplight UI](https://proxy.thermos.gifts/docs) for the latest version of the API.
+
+## General concepts
+
+### Currency and Pricing
+All price values in this API (like `floor` or `price`) are represented as strings in nanotons. A string is used to avoid precision loss with very large numbers.
+*   `1 TON = 1,000,000,000 nanoton`
+
+### Rarity
+Some attributes include a `rarity_per_mille` field. This indicates the rarity of the attribute out of 1,000. For example, a `rarity_per_mille` of `30` means there is a 3% (30/1000) chance of this attribute appearing.
+
+Some attributes also include a `rarity_score` field. This number is a product of all `rarity_per_mille` values. Foe example, if gift has model (`10`), backdrop (`20`) and symbol (`5`), its `rarity_score` is `1000`.
+
+### Colors
+Colors are represented as integers (decimal format of a hex code). For example, `5470609` is `#537791`.
+
+## Gifts API
+
+### List gift collections
+
+You can use this endpoint to obtain the full list of gift collections & associated attributes (image url, floor, count)
+
+```bash
+GET https://proxy.thermos.gifts/api/v1/collections
+```
+
+The API will return a list of `ApiGiftCollection` objects:
+
+```json
+[
+  {
+    "name": "Plush Pepe",
+    "image_url": "https://fragment.com/file/gifts/plushpepe/thumb.webp",
+    "stats": {
+      "count": 124,
+      "floor": "3899000000000"
+    }
+  },
+  ...
+]
+```
+
+### List gift backdrops
+
+You can use this endpoint to obtain the full list of gift backdrops & associated attributes (colors, floor, count)
+
+```bash
+GET https://proxy.thermos.gifts/api/v1/backdrops
+```
+
+The API will return a list of `ApiBackdrop` objects:
+
+```json
+[
+  {
+    "name": "Indigo Dye",
+    "center_color": 5470609,
+    "edge_color": 4285561,
+    "pattern_color": 203561,
+    "text_color": 12770542,
+    "stats": {
+      "count": 4749,
+      "floor": "1239999999"
+    }
+  },
+  ...
+]
+```
+
+### List gift symbols
+
+You can use this endpoint to obtain the full list of gift symbols & associated attributes (image url, floor, count)
+
+```bash
+GET https://proxy.thermos.gifts/api/v1/symbols
+```
+
+The API will return a list of `ApiSymbol` objects:
+
+```json
+[
+  {
+    "name": "Patched Heart",
+    "image_url": "https://storage.googleapis.com/portals-market/gifts/preciouspeach/patterns/patchedheart.png",
+    "stats": {
+      "count": 171,
+      "floor": "2120000000"
+    }
+  },
+  ...
+]
+```
+
+### List collection attributes
+
+You can use this endpoint to obtain supported attributes (symbols, backdrops, models) for a list of collections
+
+```bash
+POST https://proxy.thermos.gifts/api/v1/attributes
+Content-Type: application/json
+```
+
+You must specify list of collection names in the request body:
+
+```json
+{
+  "collections": [
+    "Plush Pepe"
+  ]
+}
+```
+
+The API will return an `ApiGiftCollectionAttributesResponse` object,
+which is a dictionary where keys are collection names and values are `ApiCollectionAttributes` objects:
+
+```json
+{
+  "Plush Pepe": {
+    "models": [
+      {
+        "name": "Poison Dart",
+        "rarity_per_mille": 30,
+        "image_url": "https://gifts.coffin.meme/plush%20pepe/Poison%20Dart.png",
+        "stats": {
+          "count": 5,
+          "floor": "4444000000000"
+        }
+      },
+      ...
+    ],
+    "backdrops": [
+      {
+        "name": "Navy Blue",
+        "rarity_per_mille": 20,
+        "center_color": 7118557,
+        "edge_color": 6057673,
+        "pattern_color": 1194402,
+        "text_color": 13885951,
+        "stats": {
+          "count": 1,
+          "floor": "21000000000000"
+        }
+      },
+      ...
+    ],
+    "symbols": [
+      {
+        "name": "Chocolate",
+        "rarity_per_mille": 3,
+        "stats": {
+          "count": 1,
+          "floor": "13777000000000"
+        },
+        "image_url": "https://storage.googleapis.com/portals-market/gifts/plushpepe/patterns/chocolate.png"
+      },
+      ...
+    ]
+  }
+}
+```
+
+### Gift search
+
+You can use this endpoint to perform a complex search operation
+
+```bash
+POST https://proxy.thermos.gifts/api/v1/gifts
+Content-Type: application/json
+```
+
+You must specify request body which is a `ApiGiftSearchRequest` object:
+
+```json
+{
+  "ordering": "PRICE_ASC",
+  "page": 1,
+  "per_page": 1,
+  "query": "pepe #123",
+  "price_range": {
+    "min": "1000000000",
+    "max": "20000000000"
+  },
+  "number": 1,
+  "collections": [
+    "string"
+  ],
+  "models": [
+    "Poison Dart"
+  ],
+  "backdrops": [
+    "Navy Blue"
+  ],
+  "symbols": [
+    "Chocolate"
+  ],
+  "markets": [
+    "MRKT"
+  ]
+}
+```
+
+Every parameter here is optional, e.g. this request body, in fact, is valid:
+
+```json
+{}
+```
+
+Parameters overview:
++ `ordering`: defines the sort order of gifts. Allowed values are `PRICE_ASC`, `PRICE_DESC`, `MODEL_RARITY_ASC`, `MODEL_RARITY_DESC`, `BACKDROP_RARITY_ASC`, `BACKDROP_RARITY_DESC`, `SYMBOL_RARITY_ASC`, `SYMBOL_RARITY_DESC`, `RARITY_SCORE_ASC`, `RARITY_SCORE_DESC`, `NUMBER_ASC`, `NUMBER_DESC`
++ `page`: defines current page. Minimum page is `1`
++ `per_page`: defines number of gifts per page
++ `query`: defines full-text search query
++ `price_range`: defines min & max price; prices are specified in nanoton. min & max are optional, e.g. you can specify either one of them or both
++ `number`: defines the gift number
++ `collections`: defines the list of gift collections
++ `models`: defines the list of gift models
++ `backdrops`: defines the list of gift backdrops
++ `symbols`: defines the list of gift symbols
++ `markets`: defines the list of gift markets
+
+The API will return an `ApiGiftSearchResponse` object:
+
+```json
+{
+  "items": [
+    {
+      "external_id": "bacde555-90bf-4fee-8de2-08a929fb7bcc",
+      "collection": "B-Day Candle",
+      "model": {
+        "name": "Glittery Day",
+        "rarity_per_mille": 12
+      },
+      "symbol": {
+        "name": "Corn",
+        "rarity_per_mille": 4
+      },
+      "backdrop": {
+        "name": "Strawberry",
+        "rarity_per_mille": 15
+      },
+      "number": 240011,
+      "price": "1240000000",
+      "unlock_date": "2025-07-01T19:37:56Z",
+      "lottie_url": "https://nft.fragment.com/gift/bdaycandle-240011.lottie.json",
+      "image_url": "https://nft.fragment.com/gift/bdaycandle-240011.medium.jpg",
+      "marketplace": "MRKT",
+      "rarity_score": 720,
+      "emoji_id": "5929128238172341773"
+    }
+  ],
+  "count": 360254,
+  "page": 1,
+  "pages": 360254
+}
+```
+
+Note that this api returns cached information and returned information may be outdated (e.g. price may be changed or gift may be already sold).
+You should always validate the current gift info by calling the `Get gift` endpoint
+
+### Get gift
+
+You can use this endpoint to get a gift by its marketplace & external id.
+This endpoint always returns actual data
+
+```bash
+GET https://proxy.thermos.gifts/api/v1/gifts/{marketplace}/{external_id}
+```
+
+The API will return an `ApiGiftExternal` object in case of success, or `404` if gift is not available anymore:
+
+```json
+{
+  "gift": {
+    "external_id": "bacde555-90bf-4fee-8de2-08a929fb7bcc",
+    "collection": "B-Day Candle",
+    "model": {
+      "name": "Glittery Day",
+      "rarity_per_mille": 12
+    },
+    "symbol": {
+      "name": "Corn",
+      "rarity_per_mille": 4
+    },
+    "backdrop": {
+      "name": "Strawberry",
+      "rarity_per_mille": 15
+    },
+    "number": 240011,
+    "price": "1240000000",
+    "unlock_date": "2025-07-01T19:37:56Z",
+    "lottie_url": "https://nft.fragment.com/gift/bdaycandle-240011.lottie.json",
+    "image_url": "https://nft.fragment.com/gift/bdaycandle-240011.medium.jpg",
+    "marketplace": "MRKT",
+    "rarity_score": 720,
+    "emoji_id": "5929128238172341773"
+  },
+  "metadata": {}
+}
+```
