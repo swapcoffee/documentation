@@ -238,6 +238,7 @@ POST https://backend.thermos.gifts/api/v1/gifts/buy
   "gifts": [
     {
       "external_id": "<obtained from catalog API>",
+      "price": "100000000",
       "market_source": "TONNEL",
       "action": {
         "type": "KEEP"
@@ -252,6 +253,7 @@ Let's break down the request body:
 - `gifts`: An array of gifts you want to buy. Each gift should have the following properties:
 - `external_id`: The unique identifier of the gift in the catalog.
 - `market_source`: The source of the market where the gift is listed (e.g., `TONNEL`, `PORTALS`, `MRKT`).
+- `price`: The price of the gift in nanotons (1 TON = 1,000,000,000 nanotons). It should be taken from the catalog API and should be greater than 0.
 
 The `action` field specifies what to do with the gift after buying it. The `type` can be one of the following:
 
