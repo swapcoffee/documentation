@@ -148,7 +148,8 @@
           "group": "Thermos API",
           "icon": "gift",
           "pages": [
-            "technical-guides/thermos/backend-api"
+            "technical-guides/thermos/backend-api",
+            "technical-guides/thermos/proxy-api"
             ]
         },
         "technical-guides/tokens-api",
