@@ -17,6 +17,7 @@ All price values in this API (like `floor` or `price`) are represented as string
 
 ### Rarity
 Some attributes include a `rarity_per_mille` field. This indicates the rarity of the attribute out of 1,000. For example, a `rarity_per_mille` of `30` means there is a 3% (30/1000) chance of this attribute appearing.
+
 Some attributes also include a `rarity_score` field. This number is a product of all `rarity_per_mille` values. Foe example, if gift has model (`10`), backdrop (`20`) and symbol (`5`), its `rarity_score` is `1000`.
 
 ### Colors
@@ -28,7 +29,7 @@ Colors are represented as integers (decimal format of a hex code). For example, 
 
 You can use this endpoint to obtain the full list of gift collections & associated attributes (image url, floor, count)
 
-```
+```bash
 GET https://proxy.thermos.gifts/api/v1/collections
 ```
 
@@ -52,7 +53,7 @@ The API will return a list of `ApiGiftCollection` objects:
 
 You can use this endpoint to obtain the full list of gift backdrops & associated attributes (colors, floor, count)
 
-```
+```bash
 GET https://proxy.thermos.gifts/api/v1/backdrops
 ```
 
@@ -79,7 +80,7 @@ The API will return a list of `ApiBackdrop` objects:
 
 You can use this endpoint to obtain the full list of gift symbols & associated attributes (image url, floor, count)
 
-```
+```bash
 GET https://proxy.thermos.gifts/api/v1/symbols
 ```
 
@@ -103,14 +104,14 @@ The API will return a list of `ApiSymbol` objects:
 
 You can use this endpoint to obtain supported attributes (symbols, backdrops, models) for a list of collections
 
-```
+```bash
 POST https://proxy.thermos.gifts/api/v1/attributes
 Content-Type: application/json
 ```
 
 You must specify list of collection names in the request body:
 
-```
+```json
 {
   "collections": [
     "Plush Pepe"
@@ -121,7 +122,7 @@ You must specify list of collection names in the request body:
 The API will return an `ApiGiftCollectionAttributesResponse` object,
 which is a dictionary where keys are collection names and values are `ApiCollectionAttributes` objects:
 
-```
+```json
 {
   "Plush Pepe": {
     "models": [
@@ -171,7 +172,7 @@ which is a dictionary where keys are collection names and values are `ApiCollect
 
 You can use this endpoint to perform a complex search operation
 
-```
+```bash
 POST https://proxy.thermos.gifts/api/v1/gifts
 Content-Type: application/json
 ```
@@ -228,7 +229,7 @@ Parameters overview:
 
 The API will return an `ApiGiftSearchResponse` object:
 
-```
+```json
 {
   "items": [
     {
@@ -270,13 +271,13 @@ You should always validate the current gift info by calling the `Get gift` endpo
 You can use this endpoint to get a gift by its marketplace & external id.
 This endpoint always returns actual data
 
-```
+```bash
 GET https://proxy.thermos.gifts/api/v1/gifts/{marketplace}/{external_id}
 ```
 
 The API will return an `ApiGiftExternal` object in case of success, or `404` if gift is not available anymore:
 
-```
+```json
 {
   "gift": {
     "external_id": "bacde555-90bf-4fee-8de2-08a929fb7bcc",
