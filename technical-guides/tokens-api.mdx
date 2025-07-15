@@ -111,6 +111,17 @@ The `labels` property is an array of labels that can be assigned to the token. L
 ```
 All datetime fields are in ISO 8601 format
 
+## Listing Tokens
+
+There is a special endpoint to get all jettons (up to 100 per request) with the following parameters:
+- **search**: A string to search for jettons by name or symbol.
+- **verification**: An array of verification statuses to filter jettons by their verification status. Possible values are `WHITELISTED`, `COMMUNITY`, `UNKNOWN`, and `BLACKLISTED`. By default it returns only `WHITELISTED` jettons.
+- **label_id**: An integer to filter jettons by label ID.
+- **page**: An integer to specify the page number for pagination. Default is 1.
+- **size**: An integer to specify the number of jettons per page. Default is 100.
+
+⚠️ **Note**: The `verification` parameter must be specified as an combination of query parameters, e.g. `verification=WHITELISTED&verification=COMMUNITY`.
+
 ## Community libraries
 
 ⚠️ **Note**: Libraries listed below are not maintained by **swap.coffee** team. Means that we can't guarantee their stability and correctness.
