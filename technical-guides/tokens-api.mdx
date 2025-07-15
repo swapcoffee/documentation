@@ -78,6 +78,39 @@ The `verification` property indicates the verification status of the token. The 
 - **UNKNOWN**: The token is not verified, and potentially can be unsafe.
 - **BLACKLISTED**: The token is blacklisted and considered dangerous.
 
+## Token Labels
+
+The `labels` property is an array of labels that can be assigned to the token. Labels are used to categorize tokens and can include:
+
+- **new**: The token is new and recently added to the platform (lasts for 7 days).
+- **contest**: The token is part of a contest or promotion on swap.coffee.
+- **cashback**: The token is eligible for cashback rewards when used in swaps on swap.coffee.
+
+```json
+[
+  {
+    "created_at": "2025-04-14T16:06:08.765Z",
+    "address": "0:a5d12e31be87867851a28d3ce271203c8fa1a28ae826256e73c506d94d49edad",
+    "total_supply": "10000000000000000",
+    "decimals": 9,
+    "mintable": false,
+    "verification": "WHITELISTED",
+    "name": "swap.coffee",
+    "symbol": "CES",
+    "image_url": "https://swap.coffee/logo.webp",
+    "labels": [
+      {
+        "label": "new",
+        "label_id": 1,
+        "created_at": "2025-07-15T10:52:55.611Z",
+        "expires_at": "2025-07-22T10:52:55.585Z"
+      }
+    ]
+  }
+]
+```
+All datetime fields are in ISO 8601 format
+
 ## Community libraries
 
 ⚠️ **Note**: Libraries listed below are not maintained by **swap.coffee** team. Means that we can't guarantee their stability and correctness.
