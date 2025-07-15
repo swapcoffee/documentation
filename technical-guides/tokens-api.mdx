@@ -9,45 +9,79 @@ The list of tokens and their specific properties **(TVL, price, etc)** are colle
 
 You can use tokens from the list to swap them with other tokens or build your own logic on top of it.
 
-**OpenAPI Specification for the tokens API** can be found [here](https://tokens.swap.coffee/docs). You can build your own API wrapper by using the OpenAPI code generator.
+**OpenAPI Specification for the tokens API** can be found [here](https://tokens.swap.coffee/api/v3/swagger-ui). You can build your own API wrapper by using the OpenAPI code generator.
+
+If you here for v1 or v2 API, you can find it [here](https://tokens.swap.coffee/docs). But we recommend to use the latest version of the API, as it has more features and better performance.
 
 ## Token properties
 
 Each token from the list has the following properties:
 
-- **symbol**: the token symbol (e.g. **USDT**, **CES**, **TON**, etc.)
-- **name**: the token name (e.g. **Tether**, **Toncoin**, **Scaleton**, etc.)
-- **address**: the token address on the blockchain
-- **decimals**: the number of decimals the token has
-- **blockchain_id**: the blockchain `ID` where the token is located (for TON it is always `1`)
-- **price_usd**: the price of the token in **USD**
-- **tvl**: the total value locked in the token (in **USD**)
-- **holders_count**: the number of holders of the token
-- **image**: the `URL` of the token image
+- **created_at**: The date and time when the token was added to the list.
+- **address**: The blockchain address of the token contract.
+- **total_supply**: The total supply of the token in raw format.
+- **decimals**: The number of decimal places the token can be divided into.
+- **mintable**: Indicates whether the token can be minted (true or false).
+- **verification**: The verification status of the token (e.g., WHITELISTED).
+- **name**: The name of the token.
+- **symbol**: The symbol of the token (e.g., TON).
+- **image_url**: A URL to the token's image.
 
-⚠️ **Note**: The `address` property is represented in raw format. You should convert it to a user-friendly format when using it in the swap.coffee DEX aggregator API.
+Also, each token has market statistics, which include:
+- **holders_count**: The number of unique holders of the token.
+- **price_usd**: The current price of the token in USD.
+- **price_change_5m**: The price change in the last 5 minutes (in percentage).
+- **price_change_1h**: The price change in the last hour (in percentage).
+- **price_change_6h**: The price change in the last 6 hours (in percentage).
+- **price_change_24h**: The price change in the last 24 hours (in percentage).
+- **volume_usd_24h**: The trading volume of the token in the last 24 hours in USD.
+- **tvl_usd**: The total value locked (TVL) in USD.
+- **fdmc**: The fully diluted market capitalization of the token in USD.
+- **trust_score**: A trust score indicating the reliability of the token (0-100).
 
-<span style={{ fontSize: '20px', fontWeight: 'bold' }}>**Example: CES token**</span>
+⚠️ **Note**: The `address` property is represented in raw format.
+
+<span style={{fontSize: '20px', fontWeight: 'bold'}}>**Example: CES token**</span>
 
 ```json
 {
+  "created_at": "2025-04-14T16:06:08.765Z",
   "address": "0:a5d12e31be87867851a28d3ce271203c8fa1a28ae826256e73c506d94d49edad",
-  "blockchain_id": 1,
+  "total_supply": "10000000000000000",
+  "decimals": 9,
+  "mintable": false,
+  "verification": "WHITELISTED",
   "name": "swap.coffee",
   "symbol": "CES",
-  "decimals": 9,
-  "tvl": 681406.0524709618,
-  "image": "https://assets.dedust.io/images/ces.webp",
-  "id": 177,
-  "price_usd": 3.31246653703748,
-  "holders_count": 1930,
-  "external_id": "16288"
+  "image_url": "https://swap.coffee/logo.webp",
+  "market_stats": {
+    "holders_count": 6133,
+    "price_usd": 0.8406369824666934,
+    "price_change_5m": 0,
+    "price_change_1h": 0,
+    "price_change_6h": 0,
+    "price_change_24h": 0.37,
+    "volume_usd_24h": 192.946,
+    "tvl_usd": 72106.4,
+    "fdmc": 8250090,
+    "trust_score": 100
+  },
+  "labels": []
 }
 ```
+
+## Verification Status
+
+The `verification` property indicates the verification status of the token. The possible values are:
+- **WHITELISTED**: The token is verified and whitelisted by us. Such tokens are considered safe, and it used in swap.coffee routing
+- **COMMUNITY**: The token contract hash is considered safe, but it is not used in swap.coffee routing.
+- **UNKNOWN**: The token is not verified, and potentially can be unsafe.
+- **BLACKLISTED**: The token is blacklisted and considered dangerous.
+
 ## Community libraries
 
 ⚠️ **Note**: Libraries listed below are not maintained by **swap.coffee** team. Means that we can't guarantee their stability and correctness.
 
 | Language | Library                                                                         | Description                       |
 |:---------|:--------------------------------------------------------------------------------|:----------------------------------|
-| Python   | [py-stollen/swapcoffee-tokens](https://github.com/py-stollen/swapcoffee-tokens) | Python wrapper for the Tokens API |
+| Python   | [py-stollen/swapcoffee-tokens](https://github.com/py-stollen/swapcoffee-tokens) | Python wrapper for the Tokens API |       Wrapper for legacy v2 API. |
