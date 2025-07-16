@@ -3,43 +3,43 @@ title: 'Tokens API'
 icon: 'books'
 ---
 
-**swap.coffee** constantly updates the list of tokens (or jettons for  **TON**) that are supported by the platform.
-This list is used to determine the available tokens that can be used by our swap algorithms.
-The list of tokens and their specific properties **(TVL, price, etc)** are collected from various sources and are updated on a regular basis.
+**swap.coffee** constantly updates its list of supported tokens (or jettons on **TON**).
+This list determines which assets our swap algorithms can use.
+Token data and their specific properties **(TVL, price, etc.)** are aggregated from various sources and refreshed regularly.
 
-You can use tokens from the list to swap them with other tokens or build your own logic on top of it.
+You can swap any token from the list for another or build your own logic on top of it.
 
-**OpenAPI Specification for the tokens API** can be found [here](https://tokens.swap.coffee/api/v3/swagger-ui). You can build your own API wrapper by using the OpenAPI code generator.
-
-If you here for v1 or v2 API, you can find it [here](https://tokens.swap.coffee/docs). But we recommend to use the latest version of the API, as it has more features and better performance.
+The **OpenAPI Specification for the tokens API** is available [here](https://tokens.swap.coffee/api/v3/swagger-ui).
+You can generate your own API wrapper with the OpenAPI code generator.
 
 ## Token properties
 
-Each token from the list has the following properties:
+Each token entry includes the following fields:
 
 - **created_at**: The date and time when the token was added to the list.
-- **address**: The blockchain address of the token contract.
-- **total_supply**: The total supply of the token in raw format.
-- **decimals**: The number of decimal places the token can be divided into.
-- **mintable**: Indicates whether the token can be minted (true or false).
-- **verification**: The verification status of the token (e.g., WHITELISTED).
-- **name**: The name of the token.
-- **symbol**: The symbol of the token (e.g., TON).
-- **image_url**: A URL to the token's image.
+- **address**: Raw blockchain address of the token contract.
+- **total_supply**: Total token supply in the base units.
+- **decimals**: Number of decimal places the token supports.
+- **mintable**: Indicates whether additional tokens can be minted (`true` | `false`).
+- **verification**: Verification status (e.g., `WHITELISTED`).
+- **name**: Token name.
+- **symbol**: Token symbol (e.g., `TON`).
+- **image_url**: URL of the token image.
+- **market_stats**: Market statistics (see below).
 
-Also, each token has market statistics, which include:
-- **holders_count**: The number of unique holders of the token.
-- **price_usd**: The current price of the token in USD.
-- **price_change_5m**: The price change in the last 5 minutes (in percentage).
-- **price_change_1h**: The price change in the last hour (in percentage).
-- **price_change_6h**: The price change in the last 6 hours (in percentage).
-- **price_change_24h**: The price change in the last 24 hours (in percentage).
-- **volume_usd_24h**: The trading volume of the token in the last 24 hours in USD.
-- **tvl_usd**: The total value locked (TVL) in USD.
-- **fdmc**: The fully diluted market capitalization of the token in USD.
-- **trust_score**: A trust score indicating the reliability of the token (0-100).
+Market statistics properties:
+- **holders_count**: Number of unique token holders.
+- **price_usd**: Current price in USD.
+- **price_change_5m**: Price change over the last 5 minutes (percentage).
+- **price_change_1h**: Price change over the last hour (percentage).
+- **price_change_6h**: Price change over the last 6 hours (percentage).
+- **price_change_24h**: Price change over the last 24 hours (percentage).
+- **volume_usd_24h**: 24-hour trading volume in USD.
+- **tvl_usd**: Total value locked (TVL) in USD.
+- **fdmc**: Fully diluted market capitalization in USD.
+- **trust_score**: Reliability score from 0 to 100.
 
-⚠️ **Note**: The `address` property is represented in raw format.
+⚠️ **Note**: The `address` field is provided in raw format.
 
 <span style={{fontSize: '20px', fontWeight: 'bold'}}>**Example: CES token**</span>
 
@@ -72,19 +72,18 @@ Also, each token has market statistics, which include:
 
 ## Verification Status
 
-The `verification` property indicates the verification status of the token. The possible values are:
-- **WHITELISTED**: The token is verified and whitelisted by us. Such tokens are considered safe, and it used in swap.coffee routing
-- **COMMUNITY**: The token contract hash is considered safe, but it is not used in swap.coffee routing.
-- **UNKNOWN**: The token is not verified, and potentially can be unsafe.
+The `verification` field reflects a token’s verification status. Possible values are:
+- **WHITELISTED**: The token is verified and whitelisted by swap.coffee. These assets are considered safe and are used in routing. Such tokens are guaranteed to be fee-free.
+- **COMMUNITY**: The token’s contract hash is deemed safe, but the asset is not included in swap.coffee routing. Such tokens are guaranteed to be fee-free.
+- **UNKNOWN**: The token is unverified and may be unsafe.
 - **BLACKLISTED**: The token is blacklisted and considered dangerous.
 
 ## Token Labels
 
-The `labels` property is an array of labels that can be assigned to the token. Labels are used to categorize tokens and can include:
-
-- **new**: The token is new and recently added to the platform (lasts for 7 days).
-- **contest**: The token is part of a contest or promotion on swap.coffee.
-- **cashback**: The token is eligible for cashback rewards when used in swaps on swap.coffee.
+The `labels` property is an array of strings that classify a token. Possible values include:
+- **new**: The token was recently listed; the label remains for seven days.
+- **contest**: The token participates in a contest or promotion on swap.coffee.
+- **cashback**: Swapping this token on swap.coffee qualifies for cashback rewards.
 
 ```json
 [
@@ -109,22 +108,23 @@ The `labels` property is an array of labels that can be assigned to the token. L
   }
 ]
 ```
-All datetime fields are in ISO 8601 format
+All datetime fields are in ISO 8601 format.
 
 ## Listing Tokens
 
-There is a special endpoint to get all jettons (up to 100 per request) with the following parameters:
-- **search**: A string to search for jettons by name or symbol.
-- **verification**: An array of verification statuses to filter jettons by their verification status. Possible values are `WHITELISTED`, `COMMUNITY`, `UNKNOWN`, and `BLACKLISTED`. By default it returns only `WHITELISTED` jettons.
-- **label_id**: An integer to filter jettons by label ID.
-- **page**: An integer to specify the page number for pagination. Default is 1.
-- **size**: An integer to specify the number of jettons per page. Default is 100.
+The [dedicated endpoint](https://tokens.swap.coffee/api/v3/swagger-ui#/Jettons/getJettonsList) retrieves jettons (up to 100 per request) and supports the following query parameters:
+- **search**: A string used to filter jettons by name or symbol.
+- **verification**: An array of verification statuses to filter the results. Accepted values: `WHITELISTED`, `COMMUNITY`, `UNKNOWN`, `BLACKLISTED`. If omitted, only `WHITELISTED` jettons are returned.
+- **label_id**: An integer that filters jettons by a specific label ID.
+- **page**: The page number for pagination (default: `1`).
+- **size**: The number of jettons per page (default: `100`).
 
-⚠️ **Note**: The `verification` parameter must be specified as an combination of query parameters, e.g. `verification=WHITELISTED&verification=COMMUNITY`.
+⚠️ **Note**: To specify multiple verification statuses, repeat the parameter in the query string, e.g. `verification=WHITELISTED&verification=COMMUNITY`.
 
 ## Community libraries
 
-⚠️ **Note**: Libraries listed below are not maintained by **swap.coffee** team. Means that we can't guarantee their stability and correctness.
+⚠️ **Note**: The libraries listed below are maintained by third parties rather than the **swap.coffee** team.
+Consequently, we cannot guarantee their stability or correctness.
 
 | Language | Library                                                                         | Description                       |
 |:---------|:--------------------------------------------------------------------------------|:----------------------------------|
