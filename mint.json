@@ -63,16 +63,26 @@
       "url": "https://t.me/swapcoffee_dev"
     },
     {
-      "name": "TokensDB API",
-      "icon": "square-terminal",
-      "url": "technical-guides/tokens-api-openapi",
-      "openapi": "https://tokens.swap.coffee/api/v3/openapi.yaml"
+      "name": "Token Listing",
+      "icon": "shelves",
+      "url": "https://swapcoffee.typeform.com/to/xFNfA6uA"
+    },
+    {
+      "name": "Get API Key",
+      "icon": "key",
+      "url": " https://swapcoffee.typeform.com/to/Zx49Ho3y"
     },
     {
       "name": "Aggregator API",
       "icon": "square-terminal",
       "url": "technical-guides/aggregator-api-openapi",
       "openapi": "https://backend.swap.coffee/openapi"
+    },
+    {
+      "name": "TokensDB API",
+      "icon": "square-terminal",
+      "url": "technical-guides/tokens-api-openapi",
+      "openapi": "https://tokens.swap.coffee/api/v3/openapi.yaml"
     }
   ],
   "navigation": [
@@ -202,6 +212,8 @@
   "footerSocials": {
     "telegram": "https://t.me/addlist/tShqOXNZ89tmYTg8",
     "x": "https://x.com/swap_coffee_ton",
-    "discord": "https://discord.gg/7wfjBH8pRu"
+    "discord": "https://discord.gg/7wfjBH8pRu",
+    "github": "https://github.com/swapcoffee",
+    "youtube": "https://www.youtube.com/@swap.coffee"
   }
 }
