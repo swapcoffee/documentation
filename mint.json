@@ -193,7 +193,9 @@
       "icon": "gavel",
       "pages": [
         "legal/tos",
-        "legal/policy"
+        "legal/policy",
+        "legal/aprboost",
+        "legal/grantprogram"
       ]
     }
   ],
