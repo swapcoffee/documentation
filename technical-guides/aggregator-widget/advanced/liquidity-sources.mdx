@@ -1,0 +1,43 @@
+---
+title: 'Liquidity Sources'
+description: 'Configure which liquidity providers the widget is allowed to use for swap routing.'
+---
+
+By default, `swap.coffee UI widget` supports a **full list of decentralized protocols** and automatically evaluates them at runtime.
+
+---
+
+## Default Behavior
+
+If you **do not provide** any liquidity-related configuration, the widget enables `all available sources`:
+
+```typescript
+['tonco', 'stonfi_v2', 'tonstakers', 'stonfi', 'dedust']
+```
+
+These are fully **dynamic** and **toggleable** by the user in the widget UI under expert settings.
+
+## Restricting Liquidity Sources
+
+You can **override this behavior** by passing the `liquiditySourcesList` parameter.
+
+```typescript
+liquiditySourcesList?: string[];
+```
+
+  - When this list is provided, **only the specified sources are used**, and the user **cannot change or toggle** them via the UI.
+
+### Example: Restrict to a Single Source
+
+```typescript
+createSwapWidget("#test", {
+  liquiditySourcesList: ["stonfi_v2"],
+  otherConfig...
+});
+```
+
+This limits swap routing **strictly** to `STONFI_V2`.
+All other sources like `TONCO` or `Tonstakers` **are excluded from routing and hidden in the UI**.
+
+> 🚫 When `liquiditySourcesList` is set, the widget **hides off settings for sources**.
+Users **will no longer** be able to change `liquidity source` preferences **inside the widget**.

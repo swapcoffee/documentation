@@ -1,0 +1,253 @@
+---
+title: 'Strategy Orders'
+description: 'Learn how to use LIMIT & DCA orders'
+icon: 'money-bill-transfer'
+---
+
+## Essential knowledge
+
+All of swap.coffee's orders, regardless of their type, utilize the same **Strategy Orders Service** API
+(available both at our [Rest API endpoint](https://backend.swap.coffee/swagger-ui#/Strategies) or within our SDK).
+
+To start your integration journey throughout our SDK, here's a useful code snippet:
+```typescript
+import {StrategiesApi} from "@swap-coffee/sdk";
+
+const strategiesApi = new StrategiesApi()
+```
+
+Our service of working with strategy orders is organized in a fairly simple way:
+1. For each user we deploy a so-called **Strategies Wallet** that is being administrated by our backend systems.
+2. Whenever user decides to create a new order or edit an existing one, he transfers funds and sends an associated
+message to that contract. Therefore, all the information about user's orders and interactions is stored within blockchain:
+not as a separate contract for each order, but in a single contract for all of them.
+3. Our backend systems perform strategies-related logic and build routes off-chain, then initiate both exchange- and
+order-ending transactions on the wallet contract deployed in step (1).
+
+## Strategies wallet
+
+First of all, in order to interact with strategies service, user needs to create his very own **Strategies Wallet**.
+This is a one-time action.
+
+```typescript
+import TonConnect from "@tonconnect/sdk";
+
+const connector = await setupTonConnect()
+
+// First, we retrieve a transaction for strategies wallet creation.
+const tx = await strategiesApi.getStrategyWalletCreationTransaction(
+    'USER_WALLET_ADDRESS',
+    'USER_WALLET_VERIFICATION_TOKEN'
+)
+
+// Then sending this transaction via TonConnect.
+await connector.sendTransaction({
+    validUntil: Date.now() + 5 * 60 * 1000,
+    messages: [{
+        address: tx.data.address,
+        amount: tx.data.value,
+        payload: tx.data.payload_cell,
+        stateInit: tx.data.state_init
+    }]
+})
+
+// And finally, we wait until strategies wallet is being created.
+while (true) {
+    const created = await strategiesApi.doesStrategyWalletExist(
+    'USER_WALLET_ADDRESS',
+    'USER_WALLET_VERIFICATION_TOKEN'
+    )
+    if (created.status != 404) {
+        console.log('Created strategies wallet address is', created.data)
+        break
+    }
+}
+```
+
+### Wallet verification token
+
+Many of our API methods may require a mandatory parameter `xVerify`. This is a special json-formatted string that
+confirms ownership of the associated wallet.
+
+The easiest way to obtain it is to authorize with your wallet at [our website](https://swap.coffee/limit) and to
+steal it from within browser's network profiling page (it will be in sent-headers section).
+
+The manual way to generate it is to authenticate `swap.coffee` domain using **Ton Connect**. More details about it
+available in [their documentation](https://ton-connect.github.io/sdk/modules/_tonconnect_sdk.html#backend-authorization).
+
+## Creating your first order
+
+After strategies wallet has been created, you are free to use the full power of our strategies service any way you want it.
+
+Firstly, you need to decide for which pair of assets you are going to create an order. Unlike regular route building,
+orders can not be created for an arbitrary set of pairs. What we do instead is:
+```typescript
+const fromAssets = await strategiesApi.getFromTokensEligibleForStrategies(
+    'limit' // Pick appropriate type for your order.
+)
+for (const fromAsset of fromAssets.data) {
+    const toAssets = await strategiesApi.getToTokensEligibleForStrategies('limit', fromAsset)
+    for (const toAsset of toAssets.data) {
+        console.log('Limit order can be created for assets', fromAsset, toAsset)
+    }
+}
+```
+
+After you checked that the pair of assets you wanted to create the order for is indeed supported, it is time to create
+the order itself:
+```typescript
+// Build transaction for order creation.
+const tx = await strategiesApi.getStrategyOrderCreationTransaction(
+    'USER_WALLET_ADDRESS',
+    'USER_WALLET_VERIFICATION_TOKEN',
+    {
+        type: 'limit',
+        token_from: {
+            blockchain: 'ton',
+            address: fromAsset
+        },
+        token_to: {
+            blockchain: 'ton',
+            address: toAsset
+        },
+        input_amount: "VALUE", // Absolute amount of input asset. For example, 1000000000 will be used for 1 TON.
+        max_suborders: 1,
+        max_invocations: 1,
+        slippage: 1,
+        settings
+    }
+)
+
+// Then send this tx using ton-connect.
+```
+
+### Order settings
+
+There are some non-obvious parameters in this request that require further explanation:
+- `max_suborders` - maximum amount of sub-orders this order may be split into. Must be within bounds `[1; 255]`.
+- `max_invocations` - maximum amount of sub-orders execution tries. Must be within bounds `[max_suborders; 255]`.
+What we mean by _try_ here is as follows:
+    - If sub-order executes successfully, it consumes one _try_, and order execution continues as planned;
+    - Otherwise (if sub-order couldn't be fulfilled due to slippage toleration, deadline exceeding, etc), -
+it also consumes one _try_, but checks if there are any available _tries_ left: if yes, sub-order will be retried (consuming one more _try_);
+if no, the whole order will be cancelled at the current stage of execution (possibly marked as only partially fulfilled).
+- `slippage` - this term means the same as in normal routing construction, but for **LIMIT** orders (when the system
+must guarantee that the order will be filled at no less than the user's requested price) it also affects how much the
+price must exceed the user's requested price before the order will be attempted to be filled.
+For example, `0.001` (0.1%) value set for **LIMIT** order, in which user wants to exchange 1 TON for at least 10 USDT,
+means that order will be executed when price reaches at least `10 * (1 + 0.001) = 10 * 1.001 = 10.01` USDT for 1 TON.
+Must be within bounds `(0; 1]`.
+- `settings` is the only field that is truly unique for each order type. Below it is analyzed in detail.
+
+For limit orders:
+```typescript
+{
+  min_output_amount: "VALUE" // Absolute amount of output asset to be minimally received.
+}
+```
+
+For DCA orders:
+```typescript
+{
+    delay: 60, // Delay in seconds between DCA order executions. Must be within bounds [60; 15552000].
+    price_range_from: 0.0, // Optional. Allows to prohibit the execution of an order if the price falls below the specified level.
+    price_range_to: 0.0 // Optional. Allows to prohibit the execution of an order if the price rises above the specified level.
+}
+```
+
+## Looking after existing orders
+
+There are 2 methods for retrieving your orders information: `getStrategyOrder` that looks for specific order identifier,
+and `getStrategyOrders` that supports filtering and allows to get data for multiple orders at once.
+
+Both of those methods return structure known as `StrategyOrder`, which looks as follows:
+```json
+{
+  "id": 0,
+  "type": "limit",
+  "wallet": "string",
+  "status": "active",
+  "creation_timestamp": 0,
+  "token_from": {
+    "address": {
+      "blockchain": "ton",
+      "address": "native"
+    },
+    "metadata": {
+      "name": "TON",
+      "symbol": "TON",
+      "decimals": 9,
+      "image_url": "string",
+      "listed": true
+    }
+  },
+  "token_to": {
+    "address": {
+      "blockchain": "ton",
+      "address": "native"
+    },
+    "metadata": {
+      "name": "TON",
+      "symbol": "TON",
+      "decimals": 9,
+      "image_url": "string",
+      "listed": true
+    }
+  },
+  "initial_input_amount": "string",
+  "current_input_amount": "string",
+  "settings": {
+    "additionalProp1": "string",
+    "additionalProp2": "string",
+    "additionalProp3": "string"
+  },
+  "current_output_amount": "string",
+  "max_suborders": 0,
+  "suborders_executed": 0,
+  "max_invocations": 0,
+  "invocations_executed": 0,
+  "slippage": 0.0,
+  "max_path_length": 0,
+  "active_transactions": 0,
+  "close_timestamp": 0
+}
+```
+
+Meaning of the fields:
+
+| Field name            | Field type    | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+|-----------------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| id                    | int32         | Order's identifier. Unique for every order.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| type                  | enum (string) | Order's type.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| wallet                | string        | Address of strategies wallet associated with the order. Wallets of orders of the same user are always identical.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| status                | enum (string) | Current status of the order:<ul><li>**active** - order remains.. ehm.. active.</li><li>**requested_cancellation** - user requested cancellation, but there are transactions that were recently sent for this order, and our service still awaits them. Nevertheless, order will be cancelled soon.</li><li>**cancelled_by_user** - order has been cancelled by it's owning user.</li><li>**cancelled_by_system** - for some reason our system or administration decided to cancel the order.</li><li>**executed** - order has been fully fulfilled.</li><li>**max_retries_exceeded** - order's execution failed due to slippage tolerance, deadline exceeding, etc whilst trying to perform transactions related to it. It's either partially fulfilled or fully cancelled.</li></ul> |
+| creation_timestamp    | int64         | Order's creation timestamp in unix time seconds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| initial_input_amount  | string        | Absolute amount of the input asset (`token_from`) when this order was created.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| current_input_amount  | string        | Absolute amount of the input asset (`token_from`) as for now. May be zero if the whole input asset amount was consumed. This field does not always decrease: it may decrease when our service sends exchange transaction, but increase back if that transaction fails.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| current_output_amount | string        | Absolute amount of the output asset (`token_to`) as for now. Starts at zero. Never decreases.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| settings              | structure     | Order's settings that are unique for each strategy. May include some additional (technical) fields, that were not present at the time order was created.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| max_suborders         | int8          | Maximum amount of order's suborders. Order was created with that value.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| suborders_executed    | int8          | Amount of order's suborders that were successfully executed as for now.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| max_invocations       | int8          | Maximum amount of order's invocations (_tries_). Order was created with that value.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| invocations_executed  | int8          | Amount of order's invocations (_tries) that were executed (not necessarily successfully).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| slippage              | float         | Slippage with which order was created.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| max_path_length       | int3          | Maximum length of routes for which transactions may be executed within this order, in tokens. So, for example, `2` means that only routes such as `A -> B` may be executed, and so on. This field is being set internally and therefore could not be modified in any way.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| active_transactions   | int8          | Amount of order's transactions that were sent to the blockchain and which execution status still was not handled by our service.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| close_timestamp       | int64         | Optional field that is present for orders in terminal status only. Signifies order's closing timestamp in unix time seconds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+
+Please, keep in mind that both `current_input_amount` and `current_output_amount` include fees to be withdrawn by our service (if any).
+Currently, there is no API functionality that allows to distinct funds to be sent to the user and service fees.
+
+## Order cancellation
+
+Given an existing order in `active` status, user is able to cancel it by calling appropriate method:
+```typescript
+// Get transaction for order cancellation.
+const fromAssets = await strategiesApi.getStrategyOrderCancellationTransaction(
+    'USER_WALLET_ADDRESS',
+    'USER_WALLET_VERIFICATION_TOKEN',
+    42 // order identifier
+)
+
+// Then execute it via ton-connect.
+```

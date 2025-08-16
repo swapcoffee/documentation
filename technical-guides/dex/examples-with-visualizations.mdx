@@ -35,7 +35,7 @@ an inter-contract communication will be initialized that will lead to new **Pool
 Keep in mind that pools with AMM strategies other than **Constant Product** may be created by **DEX** administration only.
 If you're interested in creation of such a pool, please contact us via Telegram [@swap.coffee DEV Chat](https://t.me/swapcoffee_dev_chat).
 
-Our recommendation for gas is `0.05 TON` for each message. Excesses will be returned.
+Our recommendation for gas is `0.1 TON` for each message. Excesses will be returned.
 If you're using notifications, more gas may be needed.
 
 ![Pool Creation](/images/dex/create_pool.png)
@@ -44,7 +44,7 @@ If you're using notifications, more gas may be needed.
 
 Similarly to **Pools** creation, liquidity provisioning has been developed as an interaction with two corresponding **Vaults**.
 
-Our recommendation for gas is `0.05 TON` for each message. Excesses will be returned.
+Our recommendation for gas is `0.1 TON` for each message. Excesses will be returned.
 If you're using notifications, more gas may be needed.
 
 ![Liquidity Provisioning](/images/dex/deposit_liquidity.png)
@@ -54,6 +54,9 @@ If you're using notifications, more gas may be needed.
 Whenever you provide **swap.coffee DEX** pools with liquidity, you get LP (Liquidity Provisioning) tokens in return.
 Those tokens correspond to a **Jetton Standard** in which **Pool** serves as a **Jetton Master** contract.
 Thereby, in order to get funds back, all you need to do is to burn LP tokens you currently own.
+
+Also, our LP jetton wallets support `custom_payload` on burn so that users may specify withdrawal liquidity parameters
+to secure the operation. You can read more about it in [TL-B schemes](/technical-guides/dex/tlb-schemes#withdrawliquidityparams) section.
 
 ![Liquidity Withdrawal](/images/dex/withdraw_liquidity.png)
 

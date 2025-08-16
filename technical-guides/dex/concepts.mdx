@@ -25,8 +25,8 @@ AMM (or Automated Market Maker) strategies are a class of algorithms that sustai
 mathematically ensure that trades are being performed at a fair (for all participants) price, that no more money is
 taken out of the **DEX** than was invested in it and a lot of other more-technical things.
 
-Each pool is uniquely identified by its assets pair AND AMM strategy. It means that within a single implementation of
-**swap.coffee DEX** there could not exist two pools of the same AMM strategy and, for example, an assets pair of TON/USDT.
+Each pool is uniquely identified by its assets pair, AMM strategy and AMM settings. It means that within a single implementation of
+a **swap.coffee DEX** there could not exist two pools of the same AMM strategy, AMM settings and, for example, an assets pair of TON/USDT.
 
 Current implementation supports only 2 AMM strategies described below, however the contracts are already coded to support
 more strategies if (when) it will be needed. If you're interested in addition of new AMM strategies, please contact
@@ -98,7 +98,7 @@ Each asset type has its own implementation of **Vault** contract, therefore ther
 ### Pool
 
 Unlike **Vaults**, all the **Pools** share the same codebase: it's a single contract source code.
-As described below, they're being uniquely identified by the asset pair and AMM strategy type.
+As described below, they're being uniquely identified by the asset pair, AMM strategy type and AMM settings.
 
 Users don't directly communicate with the **Pools** on-chain: they support only inter-contract communication.
 

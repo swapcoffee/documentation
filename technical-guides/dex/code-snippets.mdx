@@ -1,0 +1,564 @@
+---
+title: 'Code Snippets'
+description: 'Learn how to perform this or that action with dex contracts'
+icon: 'code'
+---
+
+## Generic Information
+
+All code examples are written in TypeScript using [Blueprint](https://github.com/ton-org/blueprint).
+
+If you need more implementation details, refer to the [DEX source code](https://github.com/swapcoffee/dex): it contains
+OOP implementations of all contracts, so this page is likely temporary until a full-fledged SDK is created based on that code.
+
+This document is for reference only and may contain errors. If you come across any, please consider contacting us
+via Telegram [@swap.coffee DEV Chat](https://t.me/swapcoffee_dev_chat).
+
+## (De)serialization of assets
+
+```typescript
+import { Address, beginCell, Builder, Cell, Slice } from '@ton/core';
+
+export abstract class CellSerializable {
+    public abstract write(b: Builder): void;
+
+    public toCell(): Cell {
+        const b = beginCell();
+        this.write(b);
+        return b.endCell();
+    }
+}
+
+export abstract class Asset extends CellSerializable {
+    static fromSlice(slice: Slice): Asset {
+        const type = slice.loadUint(2);
+        if (type === 0) {
+            return AssetNative.INSTANCE;
+        } else if (type === 1) {
+            return new AssetJetton(slice.loadUintBig(8), slice.loadUintBig(256));
+        } else if (type === 2) {
+            return new AssetExtra(slice.loadUintBig(32));
+        } else {
+            throw new Error('unexpected asset type');
+        }
+    }
+
+    static fromAny(value: any): Asset {
+        if (value == null) {
+            return AssetNative.INSTANCE;
+        } else if (value instanceof Address) {
+            return AssetJetton.fromAddress(value);
+        } else if (typeof value === 'bigint') {
+            return new AssetExtra(value);
+        } else {
+            throw new Error('unexpected asset type');
+        }
+    }
+}
+
+export class AssetNative extends Asset {
+    static INSTANCE = new AssetNative();
+
+    private constructor() {
+        super();
+    }
+
+    public write(b: Builder): void {
+        b.storeUint(0, 2);
+    }
+}
+
+export class AssetJetton extends Asset {
+    constructor(
+        public chain: bigint,
+        public hash: bigint,
+    ) {
+        super();
+    }
+
+    static fromAddress(address: Address): AssetJetton {
+        return new AssetJetton(
+            BigInt(address.workChain),
+            beginCell().storeBuffer(address.hash).endCell().beginParse().loadUintBig(256),
+        );
+    }
+
+    public write(b: Builder): void {
+        b.storeUint(1, 2).storeUint(this.chain, 8).storeUint(this.hash, 256);
+    }
+
+    public getAddress(): Address {
+        return beginCell()
+            .storeUint(4, 3)
+            .storeUint(this.chain, 8)
+            .storeUint(this.hash, 256)
+            .endCell()
+            .beginParse()
+            .loadAddress()
+    }
+}
+
+export class AssetExtra extends Asset {
+    constructor(public id: bigint) {
+        super();
+    }
+
+    public write(b: Builder): void {
+        b.storeUint(2, 2).storeUint(this.id, 32);
+    }
+}
+```
+
+## Vaults
+
+### Checking for existence and activity
+
+To check whether asset's **Vault** exists and is active, you firstly need to [fetch](/technical-guides/dex/get-methods#get-vault-address)
+its address from the factory, then invoke a get-method [is_active](/technical-guides/dex/get-methods#is-active).
+
+```typescript
+import { NetworkProvider } from '@ton/blueprint';
+import { Address } from '@ton/core';
+
+export async function run(provider: NetworkProvider) {
+    const asset: Asset = AssetNative.INSTANCE // or AssetJetton or AssetExtra
+    const factoryAddress = Address.parse('EQAsf2sDPfoo-0IjnRA7l_gJBB9jyo4zqfCG_1IFCCI_Qbef')
+    let resp = await provider.provider(factoryAddress).get('get_vault_address', [{ type: 'slice', cell: asset.toCell() }])
+    const vaultAddress = resp.stack.readAddress()
+    const vault = provider.provider(vaultAddress)
+    const vaultState = await vault.getState()
+    if (vaultState.state.type !== 'active') {
+        throw new Error('Vault does not exist')
+    }
+    resp = await vault.get('is_active', [])
+    const isActive = resp.stack.readBigNumber() !== 0n
+    if (!isActive) {
+        throw new Error('Vault exists, but is not active')
+    }
+}
+```
+
+### Creating a new one
+
+To create a new **Vault**, you need to send a [create_vault](/technical-guides/dex/tlb-schemes#activatevault) internal
+message to the factory.
+
+If you are creating a **Vault** for **jetton**, make sure it goes through activation process
+as described [here](/technical-guides/dex/tlb-schemes#activatevaultinternal).
+If it was unable to automatically activate itself, please contact us via Telegram [@swap.coffee DEV Chat](https://t.me/swapcoffee_dev_chat).
+
+```typescript
+import { NetworkProvider } from '@ton/blueprint';
+import { beginCell, toNano, Address } from '@ton/core';
+
+export async function run(provider: NetworkProvider) {
+    const asset: Asset = AssetNative.INSTANCE // or AssetJetton or AssetExtra
+    const factoryAddress = Address.parse('EQAsf2sDPfoo-0IjnRA7l_gJBB9jyo4zqfCG_1IFCCI_Qbef')
+    const builder = beginCell()
+        .storeUint(0xc0ffee06, 32)
+        .storeUint(0, 64)
+    asset.write(builder)
+    await provider.sender().send({
+        to: factoryAddress,
+        value: toNano(.05),
+        body: builder.endCell()
+    })
+}
+```
+
+## Pools
+
+### Creating a new one
+
+1. Check that **Vault**s for both assets exist and are active (or create them instead).
+2. Send create_pool messages to both **Vault**s. Type of each message depends on the type of asset of associated **Vault**:
+    - For TON, use [create_pool_native](/technical-guides/dex/tlb-schemes#createpoolnative).
+    - For Jetton, use [create_pool_jetton](/technical-guides/dex/tlb-schemes#createpooljetton) as a forward payload in jetton_transfer.
+    - For Extra Currency, use [create_pool_extra](/technical-guides/dex/tlb-schemes#createpoolextra).
+
+```typescript
+import { NetworkProvider } from '@ton/blueprint';
+import { beginCell, toNano, Address, Builder } from '@ton/core';
+
+export async function run(provider: NetworkProvider) {
+    const asset1: Asset = AssetNative.INSTANCE // or AssetJetton or AssetExtra
+    const asset1Amount = 100n
+    const asset2: Asset = new AssetExtra(1n) // or AssetNative or AssetJetton
+    const asset2Amount = 100n
+    const factoryAddress = Address.parse('EQAsf2sDPfoo-0IjnRA7l_gJBB9jyo4zqfCG_1IFCCI_Qbef')
+    const factory = provider.provider(factoryAddress)
+    let resp = await factory.get('get_vault_address', [{ type: 'slice', cell: asset1.toCell() }])
+    const vault1Address = resp.stack.readAddress()
+    resp = await factory.get('get_vault_address', [{ type: 'slice', cell: asset2.toCell() }])
+    const vault2Address = resp.stack.readAddress()
+    if (!provider.sender().address) {
+        throw new Error('Sender address must be present')
+    }
+    const poolParams = beginCell()
+    asset1.write(poolParams)
+    asset2.write(poolParams)
+    poolParams.storeUint(0, 3) // constant_product AMM
+    poolParams.storeMaybeRef(null) // no AMM settings
+    const poolCreationParams = beginCell()
+        .storeAddress(provider.sender().address) // recipient of LP tokens
+        .storeBit(false) // send funds to the address specified above instead of sender in case of failures
+        .storeMaybeRef(null) // no notifications
+        .storeUint(1, 1) // is_active = true
+        .storeMaybeRef(null) // no extra settings
+    await sendCreatePool(provider, poolParams, poolCreationParams, vault1Address, asset1, asset1Amount)
+    await sendCreatePool(provider, poolParams, poolCreationParams, vault2Address, asset2, asset2Amount)
+}
+
+async function sendCreatePool(
+    provider: NetworkProvider,
+    poolParams: Builder,
+    poolCreationParams: Builder,
+    vaultAddress: Address,
+    asset: Asset,
+    amount: bigint
+) {
+    const sender = provider.sender()
+    if (asset instanceof AssetNative) {
+        await sender.send({
+            to: vaultAddress,
+            value: amount + toNano(.1),
+            body: beginCell()
+                .storeUint(0xc0ffee02, 32) // create_pool_native opcode
+                .storeUint(0, 64)
+                .storeCoins(amount)
+                .storeBuilder(poolParams)
+                .storeBuilder(poolCreationParams)
+                .endCell()
+        })
+    } else if (asset instanceof AssetJetton) {
+        const jettonMaster = provider.provider(asset.getAddress())
+        let resp = await jettonMaster.get('get_wallet_address', [{
+            type: 'slice',
+            cell: beginCell().storeAddress(sender.address).endCell()
+        }])
+        const jettonWalletAddress = resp.stack.readAddress()
+        await sender.send({
+            to: jettonWalletAddress,
+            value: toNano(.15),
+            body: beginCell()
+                .storeUint(0xf8a7ea5, 32) // jetton_transfer opcode
+                .storeUint(0, 64)
+                .storeAddress(vaultAddress)
+                .storeAddress(sender.address)
+                .storeMaybeRef(null) // no custom_payload
+                .storeCoins(toNano(.1)) // fwd_gas
+                .storeMaybeRef(
+                    beginCell()
+                        .storeUint(0xc0ffee11, 32) // create_pool_jetton opcode
+                        .storeBuilder(poolParams)
+                        .storeBuilder(poolCreationParams)
+                        .endCell()
+                ).endCell()
+        })
+    } else if (asset instanceof AssetExtra) {
+        await sender.send({
+            to: vaultAddress,
+            value: toNano(.1),
+            extracurrency: {
+                [Number(asset.id)]: amount
+            },
+            body: beginCell()
+                .storeUint(0xc0ffee03, 32) // create_pool_extra opcode
+                .storeUint(0, 64)
+                .storeBuilder(poolParams)
+                .storeBuilder(poolCreationParams)
+                .endCell()
+        })
+    }
+}
+```
+
+### Providing liquidity to existing one
+
+All you need is to send deposit_liquidity messages to both **Vault**s. Type of each message depends on the type of asset of associated **Vault**:
+ - For TON, use [deposit_liquidity_native](/technical-guides/dex/tlb-schemes#depositliquiditynative).
+ - For Jetton, use [deposit_liquidity_jetton](/technical-guides/dex/tlb-schemes#depositliquidityjetton) as a forward payload in jetton_transfer.
+ - For Extra Currency, use [deposit_liquidity_extra](/technical-guides/dex/tlb-schemes#depositliquidityextra).
+
+The code itself is very similar to the one used in pools creation:
+
+```typescript
+import { NetworkProvider } from '@ton/blueprint';
+import { beginCell, toNano, Address, Cell } from '@ton/core';
+
+export async function run(provider: NetworkProvider) {
+    const asset1: Asset = AssetNative.INSTANCE // or AssetJetton or AssetExtra
+    const asset1Amount = 100n
+    const asset2: Asset = new AssetExtra(1n) // or AssetNative or AssetJetton
+    const asset2Amount = 100n
+    const factoryAddress = Address.parse('EQAsf2sDPfoo-0IjnRA7l_gJBB9jyo4zqfCG_1IFCCI_Qbef')
+    const factory = provider.provider(factoryAddress)
+    let resp = await factory.get('get_vault_address', [{ type: 'slice', cell: asset1.toCell() }])
+    const vault1Address = resp.stack.readAddress()
+    resp = await factory.get('get_vault_address', [{ type: 'slice', cell: asset2.toCell() }])
+    const vault2Address = resp.stack.readAddress()
+    if (!provider.sender().address) {
+        throw new Error('Sender address must be present')
+    }
+    const poolParams = beginCell()
+    asset1.write(poolParams)
+    asset2.write(poolParams)
+    poolParams.storeUint(0, 3) // constant_product AMM
+    poolParams.storeMaybeRef(null) // no AMM settings
+    const poolParamsCell = poolParams.endCell()
+    const depositLiquidityParamsCell = beginCell()
+        .storeAddress(provider.sender().address) // recipient of LP tokens
+        .storeBit(false) // send funds to the address specified above instead of sender in case of failures
+        .storeAddress(null) // no referral
+        .storeUint(Math.floor(Date.now() / 1000) + 900, 32) // deadline
+        .storeUint(0, 2) // using no condition
+        .storeMaybeRef(null) // no extra settings
+        .storeMaybeRef(null) // no notifications
+        .endCell()
+    await sendProvideLiquidity(provider, poolParamsCell, depositLiquidityParamsCell, vault1Address, asset1, asset1Amount)
+    await sendProvideLiquidity(provider, poolParamsCell, depositLiquidityParamsCell, vault2Address, asset2, asset2Amount)
+}
+
+async function sendProvideLiquidity(
+    provider: NetworkProvider,
+    poolParams: Cell,
+    depositLiquidityParams: Cell,
+    vaultAddress: Address,
+    asset: Asset,
+    amount: bigint
+) {
+    const sender = provider.sender()
+    if (asset instanceof AssetNative) {
+        await sender.send({
+            to: vaultAddress,
+            value: amount + toNano(.1),
+            body: beginCell()
+                .storeUint(0xc0ffee04, 32) // deposit_liquidity_native opcode
+                .storeUint(0, 64)
+                .storeCoins(amount)
+                .storeRef(depositLiquidityParams)
+                .storeRef(poolParams)
+                .endCell()
+        })
+    } else if (asset instanceof AssetJetton) {
+        const jettonMaster = provider.provider(asset.getAddress())
+        let resp = await jettonMaster.get('get_wallet_address', [{
+            type: 'slice',
+            cell: beginCell().storeAddress(sender.address).endCell()
+        }])
+        const jettonWalletAddress = resp.stack.readAddress()
+        await sender.send({
+            to: jettonWalletAddress,
+            value: toNano(.15),
+            body: beginCell()
+                .storeUint(0xf8a7ea5, 32) // jetton_transfer opcode
+                .storeUint(0, 64)
+                .storeAddress(vaultAddress)
+                .storeAddress(sender.address)
+                .storeMaybeRef(null) // no custom_payload
+                .storeCoins(toNano(.1)) // fwd_gas
+                .storeMaybeRef(
+                    beginCell()
+                        .storeUint(0xc0ffee12, 32) // deposit_liquidity_jetton opcode
+                        .storeRef(depositLiquidityParams)
+                        .storeRef(poolParams)
+                        .endCell()
+                ).endCell()
+        })
+    } else if (asset instanceof AssetExtra) {
+        await sender.send({
+            to: vaultAddress,
+            value: toNano(.1),
+            extracurrency: {
+                [Number(asset.id)]: amount
+            },
+            body: beginCell()
+                .storeUint(0xc0ffee05, 32) // deposit_liquidity_extra opcode
+                .storeUint(0, 64)
+                .storeRef(depositLiquidityParams)
+                .storeRef(poolParams)
+                .endCell()
+        })
+    }
+}
+```
+
+### Rolling back liquidity provisioning
+
+Both pool creation and liquidity provisioning operations require 2 transactions with corresponding assets to be sent.
+If only one of them appeared in the blockchain, you may want to rollback the whole process, therefore receiving sent
+funds back. In order to do so, please follow the given instructions:
+
+1. Inspect the one transaction that appeared in the blockchain, and find out `pool_creator` or `liquidity_depository`
+contract address. It is the last contract in the transaction execution chain.
+2. Send a [withdraw_deposit](/technical-guides/dex/tlb-schemes#withdrawdeposit) message to that contract.
+
+```typescript
+import { NetworkProvider } from '@ton/blueprint';
+import { beginCell, toNano, Address } from '@ton/core';
+
+export async function run(provider: NetworkProvider) {
+    const contractAddress = Address.parse('INSERT ADDRESS HERE') // address of either pool_creator or liquidity_depository
+    await provider.sender().send({
+        to: contractAddress,
+        value: toNano(.05),
+        body: beginCell()
+            .storeUint(0xc0ffee07, 32)
+            .storeUint(0, 64)
+            .endCell()
+    })
+}
+```
+
+### Performing a swap
+
+1. [Fetch](/technical-guides/dex/get-methods#get-vault-address) **Vault**'s address from factory for the input asset.
+2. [Fetch](/technical-guides/dex/get-methods#get-pool-address-no-settings) **Pool**s addresses from factory (or another source of truth) for every pool throughout your way.
+3. Send swap message to the **Vault** of input asset. Type of the message depends on the type of asset:
+ - For TON, use [swap_native](/technical-guides/dex/tlb-schemes#swapnative).
+ - For Jetton, use [swap_jetton](/technical-guides/dex/tlb-schemes#swapjetton) as a forward payload in jetton_transfer.
+ - For Extra Currency, use [swap_extra](/technical-guides/dex/tlb-schemes#swapextra).
+
+```typescript
+import { NetworkProvider } from '@ton/blueprint';
+import { beginCell, toNano, Address, Builder } from '@ton/core';
+
+export async function run(provider: NetworkProvider) {
+    const inputAsset: Asset = AssetNative.INSTANCE // or AssetJetton or AssetExtra
+    const poolTonUsdtAddress = Address.parse('EQDETPC2Trne37AQx7JKUIFA2G9uB3ifk4O7myFB6pwI6u8M')
+    const poolUsdtTonnelAddress = Address.parse('EQBjj5LzN3L1PvFvH5mzbTc8zp3Sp_vSWmSI3nWKM-Fr3W_g')
+    const inputAssetAmount = toNano(1)
+
+    const factoryAddress = Address.parse('EQAsf2sDPfoo-0IjnRA7l_gJBB9jyo4zqfCG_1IFCCI_Qbef')
+    const factory = provider.provider(factoryAddress)
+    let resp = await factory.get('get_vault_address', [{ type: 'slice', cell: inputAsset.toCell() }])
+    const vaultAddress = resp.stack.readAddress()
+
+    const sender = provider.sender()
+    const swapParamsCell = beginCell()
+        .storeUint(Math.floor(Date.now() / 1000) + 900, 32) // deadline
+        .storeAddress(sender.address) // recipient of output asset
+        .storeAddress(null) // no referral
+        .storeMaybeRef(null) // no notifications
+        .endCell()
+    let swapStepParams: Builder
+    if (noMultihop) { // example for TON -> USDT
+        swapStepParams = beginCell()
+            .storeUint(getHashFromAddress(poolTonUsdtAddress), 256)
+            .storeCoins(0n) // min USDT to receive after swap
+            .storeMaybeRef(null) // no next step
+    } else { // example for TON -> USDT -> TONNEL
+        swapStepParams = beginCell()
+            .storeUint(getHashFromAddress(poolTonUsdtAddress), 256)
+            .storeCoins(0n) // min USDT to receive after 1st swap
+            .storeMaybeRef(
+                beginCell()
+                    .storeUint(getHashFromAddress(poolUsdtTonnelAddress), 256)
+                    .storeCoins(0n) // min TONNEL to receive after 2nd swap
+                    .storeMaybeRef(null) // no next step
+                    .endCell()
+            )
+    }
+    if (inputAsset instanceof AssetNative) {
+        await sender.send({
+            to: vaultAddress,
+            value: toNano(.05) + inputAssetAmount,
+            body: beginCell()
+                    .storeUint(0xc0ffee00, 32) // swap_native opcode
+                    .storeUint(0, 64)
+                    .storeCoins(inputAssetAmount)
+                    .storeBuilder(swapStepParams)
+                    .storeRef(swapParamsCell)
+                    .endCell()
+        })
+    } else if (inputAsset instanceof AssetJetton) {
+        const jettonMaster = provider.provider(inputAsset.getAddress())
+        let resp = await jettonMaster.get('get_wallet_address', [{
+            type: 'slice',
+            cell: beginCell().storeAddress(sender.address).endCell()
+        }])
+        const jettonWalletAddress = resp.stack.readAddress()
+        await sender.send({
+            to: jettonWalletAddress,
+            value: toNano(.1),
+            body: beginCell()
+                .storeUint(0xf8a7ea5, 32) // jetton_transfer opcode
+                .storeUint(0, 64)
+                .storeAddress(vaultAddress)
+                .storeAddress(sender.address)
+                .storeMaybeRef(null) // no custom_payload
+                .storeCoins(toNano(.05)) // fwd_gas
+                .storeMaybeRef(
+                    beginCell()
+                        .storeUint(0xc0ffee10, 32) // swap_jetton opcode
+                        .storeBuilder(swapStepParams)
+                        .storeRef(swapParamsCell)
+                        .endCell()
+                ).endCell()
+        })
+    } else if (inputAsset instanceof AssetExtra) {
+        await sender.send({
+            to: vaultAddress,
+            value: toNano(.05),
+            extracurrency: {
+                [Number(inputAsset.id)]: inputAssetAmount
+            },
+            body: beginCell()
+                    .storeUint(0xc0ffee01, 32) // swap_extra opcode
+                    .storeUint(0, 64)
+                    .storeBuilder(swapStepParams)
+                    .storeRef(swapParamsCell)
+                    .endCell()
+        })
+    }
+}
+
+function getHashFromAddress(address: Address): bigint {
+    return beginCell().storeBuffer(address.hash).endCell().beginParse().loadUintBig(256)
+}
+```
+
+## Notifications
+
+**Notifications** are a system that allows sending a `custom_payload` upon the successful or failed execution of
+operations on the DEX.
+
+They can be used during pool creation, liquidity provisioning or withdrawal, as well as performing swaps. In all these
+cases, the approach to using notifications is the same: they are optional, and you can specify a notification for only
+the success case, only the failure case, or define separate notifications for each outcome. Each notification can carry
+a unique `custom_payload` and have a distinct recipient.
+
+Notifications are passed as an additional parameter when constructing a transaction to be sent by the user. However,
+depending on the operation, there are some differences in how they are ultimately processed. More on that below.
+
+Keep in mind that depending on the situation, a notification may be sent either as an internal message with its own
+opcode, or as a `forward_payload` within a `jetton_transfer`. In both cases, the user-defined `custom_payload` is **not**
+sent directly: instead, it is encapsulated within a [separate entity](/technical-guides/dex/tlb-schemes#notification).
+In other words, the recipient must either be capable of handling notification's opcode, or a proxy contract must be used
+to unwrap the encapsulated message and forward it further.
+
+The `fwd_gas` for notification must be explicitly specified in cases where the notification recipient differs from the
+funds recipient, or when the notification is sent as a `forward_payload` within a `jetton_transfer`.
+
+### On pool creation or liquidity provisioning
+
+- In case of failure, the notification will be sent **twice** - once from each **Vault**, along with the refund of the
+assets that were intended for liquidity provision.
+- In case of success, the notification will be sent **once**, but the delivery method may vary:
+  - If the notification recipient is the same as the LP tokens recipient, the notification will be delivered as a `forward_payload` inside the `jetton_transfer` that sends the LP tokens.
+  - If recipients differ, the notification will be sent as an internal message with its own opcode.
+
+### On liquidity withdrawal
+
+For liquidity withdrawals only on-success notification may be provided. If operation succeeds, the notification will
+be sent **twice** - once from each **Vault**, along with the refund of the assets that were received as a result of a
+liquidity withdrawal.
+
+### On swap
+
+In all cases the notification will be sent **once** throughout the **Vault**. The method of delivery may vary:
+- If the recipient of the funds is different from the notification recipient, the notification will be sent as an
+internal message with its own opcode.
+- If both the funds and the notification are to be sent to the same address, the behavior depends on the asset type:
+  - If the payout is in **TON** or **Extra Currency**, it will be an internal message with the notification opcode, and the corresponding **TON** or **Extra Currency** tokens will be attached to it.
+  - If the payout is in **Jetton**, the notification - still encapsulating the user's `custom_payload` - will be sent a `forward_payload` within the `jetton_transfer`.

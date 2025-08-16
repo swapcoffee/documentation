@@ -66,7 +66,7 @@
       "name": "TokensDB API",
       "icon": "square-terminal",
       "url": "technical-guides/tokens-api-openapi",
-      "openapi": "https://tokens.swap.coffee/openapi.json"
+      "openapi": "https://tokens.swap.coffee/api/v3/openapi.yaml"
     },
     {
       "name": "Aggregator API",
@@ -76,7 +76,6 @@
     }
   ],
   "navigation": [
-
     {
       "group": "User Guides",
       "icon": "child",
@@ -86,12 +85,14 @@
         "eng/user-guides/swap",
         "eng/user-guides/limit",
         "eng/user-guides/dca",
+        "eng/user-guides/yield",
         "eng/user-guides/cashback",
         "eng/user-guides/referral",
         "eng/user-guides/claiming",
         "eng/user-guides/staking",
         "eng/user-guides/contests",
-        "eng/user-guides/settings"
+        "eng/user-guides/settings",
+        "eng/ambassador-guides/welcome"
       ]
     },
     {
@@ -110,12 +111,14 @@
         "ru/user-guides/swap",
         "ru/user-guides/limit",
         "ru/user-guides/dca",
+        "ru/user-guides/yield",
         "ru/user-guides/cashback",
         "ru/user-guides/referral",
         "ru/user-guides/claiming",
         "ru/user-guides/staking",
         "ru/user-guides/contests",
-        "ru/user-guides/settings"
+        "ru/user-guides/settings",
+        "ru/ambassador-guides/welcome"
       ]
     },
     {
@@ -125,25 +128,49 @@
         "ru/white"
       ]
     },
-
-
     {
       "group": "Technical Guides",
       "icon": "microchip",
       "pages": [
-        "technical-guides/aggregator-api",
-        "technical-guides/aggregator-api-openapi",
+        {
+          "group": "Aggregator API & SDK",
+          "icon": "spider",
+          "pages": [
+            "technical-guides/aggregator-api/introduction",
+            "technical-guides/aggregator-api/routing",
+            "technical-guides/aggregator-api/staking-api",
+            "technical-guides/aggregator-api/strategy-orders",
+            "technical-guides/aggregator-api/staking-internals",
+            "technical-guides/aggregator-api/yield-internals"
+          ]
+        },
+        {
+          "group": "Thermos API",
+          "icon": "gift",
+          "pages": [
+            "technical-guides/thermos/backend-api",
+            "technical-guides/thermos/proxy-api"
+            ]
+        },
         "technical-guides/tokens-api",
-        "technical-guides/tokens-api-openapi",
-        "technical-guides/staking-internals",
         {
           "group": "Aggregator UI Widget",
           "icon": "window",
           "pages": [
             "technical-guides/aggregator-widget/introduction",
             "technical-guides/aggregator-widget/configuration",
-            "technical-guides/aggregator-widget/advanced",
-            "technical-guides/aggregator-widget/events-feature"
+            "technical-guides/aggregator-widget/events-feature",
+            {
+              "group": "Advanced Configuration",
+              "icon": "robot",
+              "pages": [
+                "technical-guides/aggregator-widget/advanced/overview",
+                "technical-guides/aggregator-widget/advanced/custom-fee",
+                "technical-guides/aggregator-widget/advanced/ui-based",
+                "technical-guides/aggregator-widget/advanced/tokens",
+                "technical-guides/aggregator-widget/advanced/liquidity-sources"
+              ]
+            }
           ]
         },
         {
@@ -153,6 +180,7 @@
             "technical-guides/dex/introduction",
             "technical-guides/dex/concepts",
             "technical-guides/dex/examples-with-visualizations",
+            "technical-guides/dex/code-snippets",
             "technical-guides/dex/get-methods",
             "technical-guides/dex/tlb-schemes",
             "technical-guides/dex/error-codes"

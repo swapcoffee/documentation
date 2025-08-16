@@ -1,0 +1,190 @@
+---
+title: 'Liquid Staking API'
+description: 'Technical documentation for interacting with TON liquid staking pools'
+icon: 'wand-magic-sparkles'
+---
+
+# Introduction
+
+Tokens in the swap.coffee platform can have associated staking pools. The staking pool information is represented by the `stakingPool` object, which contains details about the staking pool, such as the address, name, APY, and other relevant information.
+Currently, we collect staking information for the following tokens:
+
+
+* hTON (Hipo Staked TON) - https://hipo.finance
+* tsTON (Tonstakers) - https://tonstakers.com
+* stTON (Bemo) - https://bemo.fi
+
+The API located at https://tokens.swap.coffee/docs
+
+For example, for stTON (Bemo), the staking pool object looks like this:
+```json
+{
+  "address": "0:cd872fa7c5816052acdf5332260443faec9aacc8c21cca4d92e7f47034d11892",
+  "name": "Staked TON",
+  "symbol": "stTON",
+  "decimals": 9,
+  "price_usd": 3.820352,
+  "price_change_24h": -0.09,
+  "tvl": 917140.097477,
+  "holders_count": 18950,
+  "staking_pool": {
+    "id": 1,
+    "address": "0:cd872fa7c5816052acdf5332260443faec9aacc8c21cca4d92e7f47034d11892",
+    "name": "bemo",
+    "url": "https://app.bemo.fi/",
+    "description": "bemo is a non-custodial liquid staking protocol built on The Open Network (TON) blockchain. It is the first liquid staking application on TON that allows you to stake native TON tokens and, in return, get stTON tokens which you can use freely in DeFi.",
+    "minimum_deposit_ton": 1,
+    "apy": 3.83,
+    "exchange_rate": 1.0654336036660292,
+    "cycle_end": 1742472000
+  }
+}
+```
+
+
+### Fields Description
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| id | integer | Yes | Unique identifier of the staking pool |
+| address | string | Yes | The blockchain address of the staking pool contract |
+| name | string | Yes | The name of the staking pool |
+| url | string | No | URL to the staking pool's website or documentation |
+| description | string | No | A description of the staking pool, its features, and benefits |
+| minimum_deposit_ton | number | No | The minimum amount of TON that can be staked in this pool |
+| apy | number | No | Annual Percentage Yield - the expected yearly return from staking in this pool |
+| exchange_rate | number | Yes | The exchange rate between the staked token and the received token (e.g., TON to liquid staking token) |
+| cycle_end | integer | No | Unix timestamp indicating when the current staking cycle ends |
+
+# Transaction Builder API
+
+swap.coffee provides API endpoints for building stake and unstake transactions for staked tokens. These functionality
+eliminate the need for users to manually construct transactions.
+
+### Stake Transactions
+
+To build a transaction for staking TON tokens, use the following endpoint:
+
+```
+POST https://backend.swap.coffee/v2/stake/ton/transaction
+```
+
+This endpoint returns a pre-built transaction for the given stake request. The transaction must be signed and sent by the sender via their wallet.
+
+#### Request Parameters
+
+The stake transaction endpoint requires a JSON request body with the following parameters:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| sender_address | string | Yes | The address of the sender who will sign and send the transaction |
+| amount | number | Yes | The amount of TON tokens to stake |
+| token_address | string | Yes | The address of the staking pool token (e.g., stTON, hTON, tsTON) |
+| referral_name | string | No | Optional referral name for tracking purposes |
+
+#### Example Request
+
+```bash
+curl -X POST https://backend.swap.coffee/v2/stake/ton/transaction \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sender_address": "UQCNTO0Nh0Z7QNyRW1BLWfk08f2dAOw4izrx9sO6OUPg4DoV",
+    "amount": 0.05,
+    "token_address": "EQDY6PMeMbQSz7dltNN4RRTIxyuBJX4dQESOy8cWR2tUgBxH"
+  }'
+```
+
+#### Response Structure
+
+The endpoint returns a response with the following structure:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| payload_cell | string (base64) | Yes | Base64-encoded cell that is treated as a payload field in TonConnect transaction |
+| address | string | Yes | The address of the contract to interact with |
+| value | string (int128) | Yes | Amount of nanotons to be sent with the transaction |
+| state_init | string (base64) | No | Optional base64-encoded cell that is treated as a stateInit field in TonConnect transaction |
+
+#### Example Response
+
+```json
+{
+  "payload_cell": "te6cckEBAQEAcQAA3v8AIN0gggFMl7ohggEznLqxn3Gw7UTQ0x/THzHXC//jBOCk8mCDCNcYINMf0x/TH/gjE7vyY+1E0NMf0x/T/9FRMrryoVFEuvKiBPkBVBBV+RDyo/gAkyDXSpbTB9QC+wDo0QGkyMsfyx/L/8ntVBC9ba0=",
+  "address": "EQCM3B12QK1e4yZSf8GtBRT0aLMNyEsBc_DhVfRRtOEffLez",
+  "value": "100000000"
+}
+```
+
+### Unstake Transactions
+
+To build a transaction for unstaking TON tokens, use the following endpoint:
+
+```
+POST https://backend.swap.coffee/v2/unstake/ton/transaction
+```
+
+This endpoint returns a pre-built transaction for the given unstake request. The transaction must be signed and sent by the sender via their wallet.
+
+#### Request Parameters
+
+The unstake transaction endpoint requires a JSON request body with the following parameters:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| sender_address | string | Yes | The address of the sender who will sign and send the transaction |
+| amount | number | Yes | The amount of staked tokens to unstake |
+| token_address | string | Yes | The address of the staking pool token (e.g., stTON, hTON, tsTON) |
+| referral_name | string | No | Optional referral name for tracking purposes |
+
+#### Example Request
+
+```bash
+curl -X POST https://backend.swap.coffee/v2/unstake/ton/transaction \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sender_address": "UQCNTO0Nh0Z7QNyRW1BLWfk08f2dAOw4izrx9sO6OUPg4DoV",
+    "amount": 0.05,
+    "token_address": "EQDY6PMeMbQSz7dltNN4RRTIxyuBJX4dQESOy8cWR2tUgBxH"
+  }'
+```
+
+#### Response Structure
+
+The endpoint returns a response with the following structure:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| payload_cell | string (base64) | Yes | Base64-encoded cell that is treated as a payload field in TonConnect transaction |
+| address | string | Yes | The address of the contract to interact with |
+| value | string (int128) | Yes | Amount of nanotons to be sent with the transaction |
+| state_init | string (base64) | No | Optional base64-encoded cell that is treated as a stateInit field in TonConnect transaction |
+
+#### Example Response
+
+```json
+{
+  "payload_cell": "te6cckEBAQEAcQAA3v8AIN0gggFMl7ohggEznLqxn3Gw7UTQ0x/THzHXC//jBOCk8mCDCNcYINMf0x/TH/gjE7vyY+1E0NMf0x/T/9FRMrryoVFEuvKiBPkBVBBV+RDyo/gAkyDXSpbTB9QC+wDo0QGkyMsfyx/L/8ntVBC9ba0=",
+  "address": "EQCM3B12QK1e4yZSf8GtBRT0aLMNyEsBc_DhVfRRtOEffLez",
+  "value": "100000000"
+}
+```
+
+## Using the built message with TonConnect
+
+This transaction information can be used with wallet providers like TonConnect to execute the stake or unstake operation. Here's an example of how to use the response with TonConnect:
+
+```javascript
+const transaction = {
+  validUntil: Math.floor(Date.now() / 1000) + 360, // 5 minutes from now
+  messages: [
+    {
+      address: response.address,
+      amount: response.value,
+      payload: response.payload_cell
+    }
+  ]
+};
+
+// Send the transaction using TonConnect
+tonConnectUi.sendTransaction(transaction);
+```

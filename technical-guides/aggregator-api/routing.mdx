@@ -1,50 +1,20 @@
 ---
-title: 'Aggregator API & SDK'
-description: 'Build apps on TON Blockchais like a pro.'
-icon: 'spider'
+title: 'Routing'
+description: 'How tou build routes using our API?'
+icon: 'swap'
 ---
 
-<p align="center">
-    <a href="https://swap.coffee" target="blank"><img src="https://avatars.githubusercontent.com/u/171727895?s=400&u=f6a9b30455abed8c09dc7d4e6108eb21d0715ade&v=4" width="130" alt="swap.coffee logo" /></a>
-</p>
-
-<p align="center">SDK for swap.coffee DEX aggregator</p>
-
-<p align="center">
-    <a href="https://www.npmjs.com/package/@swap-coffee/sdk"><img alt="npm" src="https://img.shields.io/npm/v/%40swap-coffee%2Fsdk?labelColor=%23fffff&color=%233e1c00"/></a>
-    <a href="https://opensource.org/licenses/mit"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue"/></a>
-</p>
-
-
-## Installation
-
-For JavaScript/TypeScript please use the SDK as stated below:
-
-```bash
-npm install @swap-coffee/sdk
-```
-
-For any other languages, you can integrate with our [Rest API](https://backend.swap.coffee/swagger-ui) directly.
-
-## Concepts
-
-Here are some basic concepts you need to know to work with our SDK:
-
-- **Asset**: an asset is a token on a blockchain. It can be a native token (like **TON** on TON blockchain) or a token on a smart contract, named `jetton` (like **USDT** on ****TON blockchain****). Each asset has a unique address on the blockchain.
-- **Route**: a route is a set of paths.
-- **Path**: a path is a list of tokens (or, more specifically, of liquidity pools) that can be swapped one to another. For example, if you want to swap **TON** to **USDT**, you can do it directly `(TON -> USDT)` or you can do it in two steps ``(TON -> CES -> USDT)``. The first path has one swap, the second path has two swaps.
-- **Price impact**: when you perform a swap, the price of the token can change. The price impact depends on the amount you want to swap and the liquidity of the token. If you swap a small amount, the price impact will be low. If you swap a large amount, the price impact will be high.
-- **Price slippage**: the price of a token can change over time. When you swap tokens, you can set a slippage tolerance. If the price of the token changes more than the slippage tolerance, the transaction will fail.
-- **Transaction**: a transaction is a set of messages that are sent to the blockchain. Each message can be a token transfer, a contract call, etc. When you swap tokens, you need to build a transaction that will swap the tokens for you.
-
-## How the DEX aggregator works
+## How our routing works
 
 1. You provide the input token, the output token and the amount you want to swap.
-2. We build the optimal route for you. This route can be direct `(input token -> output token)` or indirect `(input token -> token1 -> token2 -> ... -> output token)`. By splitting the amount of the input token between several liquidity pools on several decentralized exchanges ****(DeDust, STONfi)****, we can reduce the price impact and get a better price for you.
+2. We build the optimal route for you. This route can be direct `(input token -> output token)` or
+indirect `(input token -> token1 -> token2 -> ... -> output token)`. By splitting the amount of the input token between
+several liquidity pools on several decentralized exchanges (**DeDust**, **STONfi**, etc), we can reduce the price impact
+and get a better price for you.
 3. We build the transactions that will swap the tokens.
 4. You send the transactions to the blockchain.
-5. If slippage tolerance is exceeded, the transaction is reverted.
-6. You receive the output token in your wallet.
+5. If slippage is tolerated or deadline exceeds (in rare cases of blockchain lags), the transaction is being (possibly partially) reverted.
+Otherwise, you receive the output token in your wallet.
 
 ## Basic usage
 
@@ -120,7 +90,7 @@ const route = await routingApi.buildRoute({
 - <code>max_splits</code> - maximum number of splits, default is **4**. If specified, it must be an integer from **[1; 20]** range. Each split is a distinct path, therefore a distinct blockchain-message that will need to be sent. Currently, wallet contract implementations up to version **4** support not more than **4** messages in a single transaction. Starting from version **5**, the number of message in a single transaction has been raise to **255** `(but ours upper limit is 20)`.
 
 ```typescript
-  const route = await routingApi.buildRoute({
+const route = await routingApi.buildRoute({
     input_token: assetIn,
     output_token: assetOut,
     input_amount: input_amount,
@@ -130,17 +100,18 @@ const route = await routingApi.buildRoute({
 
 - <code> pool_selector </code> is an optional property that allows you to control which liquidity pools can be used whilst building the route.
 
-   - `blockchains` - allows you to limit liquidity pools to given blockchains only. Currently ****swap.coffee**** does not support cross-chain swaps, but who knows what will happen tomorrow 🙂 If you're certain that you won't like performing cross-chain swaps in the future, set this property to ****["ton"]**** value. By default, all supported blockchains are used.
-   - `dexes` - allows you to limit liquidity pools to given dexes only. Supported values: ****["stonfi"]**** and ****["dedust"]****. By default, all supported DEXes are used.
+   - `blockchains` - allows you to limit liquidity pools to given blockchains only. Currently **swap.coffee** does not support cross-chain swaps, but who knows what will happen tomorrow 🙂 If you're certain that you won't like performing cross-chain swaps in the future, set this property to **["ton"]** value. By default, all supported blockchains are used.
+   - `dexes` - allows you to limit liquidity pools to given dexes only. By default, all supported DEXes are used.
    - `max_volatility` - allows you to filter out those liquidity pools, whose price volatility over the last 15 minutes exceeded the given value. The higher the value, the more volatile liquidity pools may be used.
 
 ## Difference between direct and indirect routes
 
 Direct routes without intermediate tokens are usually more safe, but less profitable. Indirect routes with intermediate tokens are usually more profitable, but less safe, because the price of intermediate tokens can change during the transaction and chance that your may receive intermediate tokens instead of the desired output token is higher.
 
-It's called ****"slippage"**** - the difference between the expected price and the actual price. For example, when you set `slippage` to **0.1**, it means that transaction within blockchain must be aborted if any of the swaps lead to obtaining less than `1 - 0.1 = 0.9 = 90%` of amount predicted by **swap.coffee** backend in returned **route**. Due to async nature of **TON** blockchain, such `slippage` abortion can also lead to a situation where the sender is left with neither the input nor the output tokens, but an intermediate one.
+It's called **"slippage"** - the difference between the expected price and the actual price. For example, when you set `slippage` to **0.1**, it means that transaction within blockchain must be aborted if any of the swaps lead to obtaining less than `1 - 0.1 = 0.9 = 90%` of amount predicted by **swap.coffee** backend in returned **route**. Due to async nature of **TON** blockchain, such `slippage` abortion can also lead to a situation where the sender is left with neither the input nor the output tokens, but an intermediate one.
 
 There are also tokens that can't be swapped directly, because they don't share a liquidity pool. Therefore, if you setup parameters so that only direct swaps allowed (i.e. if `max_length` is equal to **2**), an empty route will be built for you.
+
 ## ExactOut swaps
 
 If you want to receive an exact amount of output tokens, you can specify the `output_amount` parameter. Those swaps, in comparison to direct swaps (when you specify `input_amount` instead), may be significantly less profitable. They also do not support splitting, which means that resulting route (if exists) will always contain a single path.
@@ -152,6 +123,100 @@ const route = await routingApi.buildRoute({
     output_amount: 200 // desired amount of output token
 });
 ```
+
+## Multi-asset swaps
+
+Sometimes you might want to exchange multiple input assets for a single output asset in one operation. A common use case is swapping various tokens from your balance into a primary asset like TON or USDT.
+
+swap.coffee supports this scenario through **Multi-asset swap** feature.
+
+To use this feature via sdk, you'll need `buildMultiAssetRoute` function of the `RoutingApi`. This function is similar to its single-asset counterpart (`buildRoute`), but designed for multiple inputs.
+
+Here are the key differences from `buildRoute`:
+1. Input parameters:
+    - Instead of `input_token: ApiTokenAddress` and `input_amount: number`, `buildMultiAssetRoute` accepts a single `input_assets` parameter.
+    - `input_assets` is an array of `ApiMultiAssetInputAsset` object, where each one has the following structure: \
+      `{ asset: ApiTokenAddress, amount: number }` \
+      This allows you to specify each input token and its corresponding amount.
+    - `buildMultiAssetRoute` does not support `output_amount` field.
+2. Return value structure:
+    - `buildMultiAssetRoute` returns an `ApiMultiAssetRoute` object.
+    - The `ApiRoute` object (returned by `buildRoute`) describes a single swap operation and contains fields like `input_token`, `output_token`, `input_amount`, `output_amount`, and `paths`.
+    - The `ApiMultiAssetRoute` object (returned by `buildMultiAssetRoute`) aggregates information for the multi-asset swap:
+        - It contains a `routes: ApiRoute[]` field. Each element here is an `ApiRoute` object, representing one part of the multi-asset swap.
+        - It contains an `output_token: ApiToken` field, representing a single output token of the multi-asset swap.
+        - It provides aggregated totals like `total_output_amount`, `total_savings`, `total_estimated_cashback_usd`, etc., summing up corresponding values from all individual routes.
+
+Here's how you can use `buildMultiAssetRoute` to swap both TON and USDT for CES:
+
+```typescript
+import {ApiTokenAddress, RoutingApi} from "@swap-coffee/sdk";
+
+const connector = await setupTonConnect()
+const routingApi = new RoutingApi()
+
+const assetTon: ApiTokenAddress = {
+    blockchain: "ton",
+    address: "native" // stands for TON
+}
+const assetUsdt: ApiTokenAddress = {
+    blockchain: "ton",
+    address: "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs" // USDT
+}
+const assetOut: ApiTokenAddress = {
+    blockchain: "ton",
+    address: "EQCl0S4xvoeGeFGijTzicSA8j6GiiugmJW5zxQbZTUntre-1" // CES
+}
+
+// let's build an optimal route
+const route = await routingApi.buildMultiAssetRoute({
+    input_assets: [
+        {
+            token: assetTon,
+            amount: 1.0
+        },
+        {
+            token: assetUsdt,
+            amount: 2.0
+        }
+    ],
+    output_asset: assetOut
+})
+
+// then we can build transactions payload
+const transactions = await routingApi.buildTransactionsV2({
+    sender_address: connector.account?.address!!, // address of user's wallet
+    slippage: 0.1, // 10% slippage
+    paths: route.data.routes.flatMap(it => it.paths), // collect all splits
+})
+```
+
+## MEV Protection
+
+You can enable MEV protection, which protects user's swaps from the so-called sandwich attacks: a MEV bot buys the token before your trade and sells it immediately afterward, causing you to purchase at a higher price. By enabling MEV protection, you can ensure that swaps are not only secure but also maximally profitable.
+
+Note that we charge an additional fee for each split in the swap. However, this fee should be absolutely justified when swapping large amounts of liquidity.
+
+Be aware that enabling MEV protection will exclude the following DEXes from the routing due to their technical limitations:
+- STON.fi (v1 only)
+
+To enable MEV protection, you have to pass an extra parameters to our API:
+
+```typescript
+const route = await routingApi.buildRoute({
+    // the rest of the parameters
+    // ...
+    mev_protection: true
+});
+
+const transactions = await routingApi.buildTransactionsV2({
+    // the rest of the parameters
+    // ...
+    mev_protection: true
+})
+```
+
+That's it. MEV protection is enabled, and our system will take care of the rest to maximize the profit from the swap.
 
 ## Checking transaction results
 
@@ -389,16 +454,3 @@ Default value of `max_splits` for `buildRoute` is 4. So, if you haven't specifie
 start doing so. If you have tools to determine user's wallet version, you may set it to `3` for walletV4 and to `20`
 for walletV5. Otherwise, you can just leave it at `3`, because in most circumstances this is more than enough for a
 good route to be built.
-
-## API Limitations
-Our API is public, which means it allows unauthorized access. However, this access has its limitations:
-
-- `input_token` and `output_token` must be different, so you are not allowed to find cycles. Moreover, none of the
-returned routes will contain cycles within them (so no paths like `token1 -> token2 -> token1 -> token3`
-will be returned).
-- We believe that the average load of 1 request per second per IP is more than acceptable. If you generate more, the API
-will return a `429 Too Many Requests` error.
-- The entire commission received through the execution of transactions built by **swap.coffee** goes to **swap.coffee**.
-
-If you are considering integration with our product, building an arbitrage service or generating a higher level of load,
-please contact us via Telegram [@swap.coffee DEV Chat](https://t.me/swapcoffee_dev_chat).

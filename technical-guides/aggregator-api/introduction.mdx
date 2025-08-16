@@ -1,0 +1,51 @@
+---
+title: 'Start using swap.coffee engine today'
+description: 'Build apps on TON Blockchais like a pro.'
+icon: 'wand-sparkles'
+---
+
+<p align="center">
+    <a href="https://swap.coffee" target="blank"><img src="https://avatars.githubusercontent.com/u/171727895?s=400&u=f6a9b30455abed8c09dc7d4e6108eb21d0715ade&v=4" width="130" alt="swap.coffee logo" /></a>
+</p>
+
+<p align="center">SDK for swap.coffee DEX aggregator</p>
+
+<p align="center">
+    <a href="https://www.npmjs.com/package/@swap-coffee/sdk"><img alt="npm" src="https://img.shields.io/npm/v/%40swap-coffee%2Fsdk?labelColor=%23fffff&color=%233e1c00"/></a>
+    <a href="https://opensource.org/licenses/mit"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue"/></a>
+</p>
+
+
+## Installation
+
+For JavaScript/TypeScript please use the SDK as stated below:
+
+```bash
+npm install @swap-coffee/sdk
+```
+
+For any other languages, you can integrate with our [Rest API](https://backend.swap.coffee/swagger-ui) directly.
+
+## Concepts
+
+Here are some basic concepts you need to know to work with our SDK:
+
+- **Asset**: an asset is a token on a blockchain. It can be a native token (like **TON** on TON blockchain) or a token on a smart contract, named `jetton` (like **USDT** on **TON blockchain**). Each asset has a unique address on the blockchain.
+- **Route**: a route is a set of paths.
+- **Path**: a path is a list of tokens (or, more specifically, of liquidity pools) that can be swapped one to another. For example, if you want to swap **TON** to **USDT**, you can do it directly `(TON -> USDT)` or you can do it in two steps ``(TON -> CES -> USDT)``. The first path has one swap, the second path has two swaps.
+- **Price impact**: when you perform a swap, the price of the token can change. The price impact depends on the amount you want to swap and the liquidity of the token. If you swap a small amount, the price impact will be low. If you swap a large amount, the price impact will be high.
+- **Price slippage**: the price of a token can change over time. When you swap tokens, you can set a slippage tolerance. If the price of the token changes more than the slippage tolerance, the transaction will fail.
+- **Transaction**: a transaction is a set of messages that are sent to the blockchain. Each message can be a token transfer, a contract call, etc. When you swap tokens, you need to build a transaction that will swap the tokens for you.
+
+## API Limitations
+Our API is public, which means it allows unauthorized access. However, this access has its limitations:
+
+- `input_token` and `output_token` whilst building routes must be different, so you are not allowed to find cycles.
+Moreover, none of the returned routes will contain cycles within them (so no paths like
+`token1 -> token2 -> token1 -> token3` will be returned).
+- We believe that the average load of 1 request per second per IP is more than acceptable. If you generate more, the API
+will return a `429 Too Many Requests` error.
+- No product-specific features, such as in-depth analysis of your users trades, available.
+
+If you are considering integration with our product, building an arbitrage service or generating a higher level of load,
+please contact us via Telegram [@swap.coffee DEV Chat](https://t.me/swapcoffee_dev_chat).

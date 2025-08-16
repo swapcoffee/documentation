@@ -36,6 +36,30 @@ amm_settings amplification:uint16 asset1_weight:Coins
 | asset1_weight | Value by which first asset reserves and amounts multiplied in StableSwap formulas. Usually a power of 10                                                                                                |
 | asset2_weight | Value by which second asset reserves and amounts multiplied in StableSwap formulas. Usually a power of 10                                                                                               |
 
+### Asset
+
+```tl-b
+native$00 = Asset;
+
+jetton$01 chain:uint8 hash:uint256 = Asset;
+
+extra$10 id:uint32 = Asset;
+```
+
+Defines asset type (and metadata) to work with.
+
+#### native
+
+Used for TONcoin.
+
+#### jetton
+
+Used for any jettons.
+
+#### extra
+
+Used for extra currencies.
+
 ### DepositLiquidityCondition
 
 ```tl-b
@@ -72,59 +96,63 @@ In other words, all of the following formulas must be true:
 
 #### complex
 
-Just a combination of **none** and **reserves_ratio**.
+Just a combination of **lp_quantity** and **reserves_ratio**.
 
-### Asset
+### WithdrawLiquidityCondition
 
 ```tl-b
-native$00 = Asset;
+none$00 = WithdrawLiquidityCondition;
 
-jetton$01 chain:uint8 hash:uint256 = Asset;
+assets_quantity$01 min_first_amount:Coins min_second_amount = WithdrawLiquidityCondition;
 
-extra$10 id:uint32 = Asset;
+reserves_ratio$10 denominator:uint16 min_nominator:uint16
+                  max_nominator:uint16 = WithdrawLiquidityCondition;
+
+complex$11 min_first_amount min_second_amount:Coins denominator:uint16
+           min_nominator:uint16 max_nominator:uint16 = WithdrawLiquidityCondition;
 ```
 
-Defines asset type (and metadata) to work with.
+Defines condition, which will be checked whenever user tries to withdraw already provided liquidity from the pool.
+If it fails, transaction will be reverted (and LP tokens will be minted back).
 
-#### native
-
-Used for TONcoin.
-
-#### jetton
-
-Used for any jettons.
-
-#### extra
-
-Used for extra currencies.
+Subtypes are very similar with [DepositLiquidityCondition](#depositliquiditycondition) ones.
 
 ### PoolParams
 
 ```tl-b
-pool_params first:Asset second:Asset amm:AMM = PoolParams;
+pool_params first:Asset second:Asset amm:AMM amm_settings:(Maybe ^Cell) = PoolParams;
 ```
 
-Used to uniquely identify the pool. Only one pool can exist for given asset-pair and AMM type.
+Used to uniquely identify the pool. Only one pool can exist for given asset-pair, AMM type and AMM settings.
+
+| Property Name | Meaning                                                                           |
+|---------------|-----------------------------------------------------------------------------------|
+| first         | First [asset](#asset) of the pool (in any order)                                  |
+| second        | Second [asset](#asset) of the pool (in any order)                                 |
+| amm           | [Market-making strategy](#amm) of the pool                                        |
+| amm_settings  | Cell of [AMM settings](#amm-settings). Must be set for those AMMs that require it |
 
 ### PublicPoolCreationParams
 
 ```tl-b
-public_pool_creation_params recipient:MsgAddressInt notification_data:(Maybe ^Cell)
+public_pool_creation_params recipient:MsgAddressInt
+                            use_recipient_on_failure:int1
+                            notification_data:(Maybe ^Cell)
 = PublicPoolCreationParams;
 ```
 
 Params that may be publicly used for new pools creation:
 
-| Property Name     | Meaning                                                                                                                           |
-|-------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| recipient         | Address to which LP tokens must go after transaction succeed (or to which funds must return in failure scenario). Must be present |
-| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)                                                              |
+| Property Name            | Meaning                                                                                                                                                               |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| recipient                | Address to which LP tokens must go after transaction succeed (or to which funds must return in failure scenario). Must be present                                     |
+| use_recipient_on_failure | Determines where to accrue funds in case of any failure. If set to 0, funds will be returned to transaction initiator; otherwise they will be returned to `recipient` |
+| notification_data        | Used for custom payloads. See: [NotificationData](#notificationdata)                                                                                                  |
 
 ### PrivatePoolCreationParams
 
 ```tl-b
-private_pool_creation_params is_active:uint1 amm_settings:(Maybe ^Cell)
-                             extra_settings:(Maybe ^Cell)
+private_pool_creation_params is_active:uint1 extra_settings:(Maybe ^Cell)
 = PrivatePoolCreationParams;
 ```
 
@@ -133,7 +161,6 @@ Params that may be used for new pools creation by DEX administration only:
 | Property Name  | Meaning                                                                                                        |
 |----------------|----------------------------------------------------------------------------------------------------------------|
 | is_active      | Is pool active (functional) at the time it's being created. Must be set to 1 when invoked from non-admin users |
-| amm_settings   | Cell of [AMM settings](#amm-settings). Must be set for those AMMs that require it                              |
 | extra_settings | Reserved for future features, not currently in use                                                             |
 
 ### PoolCreationParams
@@ -168,9 +195,9 @@ Defines how to handle notifications (custom payloads) in none of, one of or both
 ### PoolUpdateParams
 
 ```tl-b
-pool_update_params flags:(## 3) amm_settings:flags.0?^Cell
-                   protocol_fee:flags.1?uint16 lp_fee:flags.1?uint16
-                   is_active:flags.2?uint1 = PoolUpdateParams;
+pool_update_params flags:(## 2)
+                   protocol_fee:flags.0?uint16 lp_fee:flags.0?uint16
+                   is_active:flags.1?uint1 = PoolUpdateParams;
 ```
 
 Defines pool's parameters that may be updated by **DEX** administrator.
@@ -234,7 +261,8 @@ Defines reserves of the pool.
 ### DepositLiquidityParamsTrimmed
 
 ```tl-b
-deposit_liquidity_params_trimmed recipient:MsgAddressInt referral:MsgAddressInt
+deposit_liquidity_params_trimmed recipient:MsgAddressInt use_recipient_on_failure:int1
+                                 referral:MsgAddressInt
                                  deadline:uint32 condition:DepositLiquidityCondition
                                  extra_settings:(Maybe ^Cell)
                                  notification_data:(Maybe ^NotificationData)
@@ -244,14 +272,15 @@ deposit_liquidity_params_trimmed recipient:MsgAddressInt referral:MsgAddressInt
 Defines parameters required for liquidity provisioning.
 This exact entity is being used in inter-contract communication and lacks some of extra information (see below).
 
-| Property Name     | Meaning                                                                                                                               |
-|-------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| recipient         | Address to which LP tokens must go after transaction succeed (or to which funds must return in failure scenario). Must be present     |
-| referral          | Referral address used exclusively for analytical purposes. No fees or any kind or rewards will be given                               |
-| deadline          | Unix timestamp. If contract receives liquidity provisioning message after that time, transaction will be failed at that step          |
-| condition         | Used to protect the liquidity provider from unfavorable pool conditions. See: [DepositLiquidityCondition](#depositliquiditycondition) |
-| extra_settings    | Reserved for future features, not currently in use                                                                                    |
-| notification_data | Used for custom payloads. See: [NotificationData](#notificationdata)                                                                  |
+| Property Name            | Meaning                                                                                                                                                               |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| recipient                | Address to which LP tokens must go after transaction succeed (or to which funds must return in failure scenario). Must be present                                     |
+| use_recipient_on_failure | Determines where to accrue funds in case of any failure. If set to 0, funds will be returned to transaction initiator; otherwise they will be returned to `recipient` |
+| referral                 | Referral address used exclusively for analytical purposes. No fees or any kind or rewards will be given                                                               |
+| deadline                 | Unix timestamp. If contract receives liquidity provisioning message after that time, transaction will be failed at that step                                          |
+| condition                | Used to protect the liquidity provider from unfavorable pool conditions. See: [DepositLiquidityCondition](#depositliquiditycondition)                                 |
+| extra_settings           | Reserved for future features, not currently in use                                                                                                                    |
+| notification_data        | Used for custom payloads. See: [NotificationData](#notificationdata)                                                                                                  |
 
 ### DepositLiquidityParams
 
@@ -261,6 +290,27 @@ deposit_liquidity_params params:^DepositLiquidityParamsTrimmed
 ```
 
 Extended version of the previous one. Pool parameters are used to identify the pool.
+
+### WithdrawLiquidityParams
+
+```tl-b
+withdraw_liquidity_params use_recipient_on_failure:int1 deadline:uint32
+                          condition:WithdrawLiquidityCondition
+                          extra_settings:(Maybe ^Cell)
+                          on_success:(Maybe ^NotificationDataSingle)
+= WithdrawLiquidityParams;
+```
+
+Defines parameters that may be specified by user when withdrawing already provided liquidity (by burning his LP tokens).
+This exact entity is being used as a `custom_payload` within [burn message](#burn-liquidity-withdrawal).
+
+| Property Name            | Meaning                                                                                                                                                               |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| use_recipient_on_failure | Determines where to accrue funds in case of any failure. If set to 0, funds will be returned to transaction initiator; otherwise they will be returned to `recipient` |
+| deadline                 | Unix timestamp. If contract receives liquidity withdrawal message after that time, transaction will be failed at that step                                            |
+| condition                | Used to protect the liquidity withdrawer from unfavorable pool conditions. See: [WithdrawLiquidityCondition](#withdrawliquiditycondition)                             |
+| extra_settings           | Reserved for future features, not currently in use                                                                                                                    |
+| on_success               | Used for custom payloads on successful liquidity withdrawals. See: [NotificationData](#notificationdata)                                                              |
 
 ### ContractUpdate
 
@@ -296,7 +346,7 @@ Must be sent by user to the **Native Vault** to initiate swap transaction.
 swap_jetton#c0ffee10 _:SwapStepParams params:^SwapParams = SwapJetton;
 ```
 
-Must be sent by user to the corresponding **Jetton Vault** as a custom payload of a jetton-transfer message to initiate swap transaction.
+Must be sent by user to the corresponding **Jetton Vault** as a forward payload of a jetton-transfer message to initiate swap transaction.
 
 Query ID, jetton and it's amount are being determined internally from jetton transfer notification and therefore mustn't be present here.
 
@@ -388,7 +438,7 @@ create_pool_jetton#c0ffee11 params:PoolParams
 ```
 
 Must be sent by user to the corresponding **Jetton Vault** as a part of pool creation (and it's initial liquidity provisioning).
-This message must be included as a custom payload to the jetton-transfer message.
+This message must be included as a forward payload to the jetton-transfer message.
 
 Query ID, jetton and it's amount are being determined internally from jetton transfer notification and therefore mustn't be present here.
 
@@ -438,7 +488,7 @@ deposit_liquidity_jetton#c0ffee12 params:DepositLiquidityParams
 ```
 
 Must be sent by user to the corresponding **Jetton Vault** as a part of liquidity provisioning process.
-This message must be included as a custom payload to the jetton-transfer message.
+This message must be included as a forward payload to the jetton-transfer message.
 
 Query ID, jetton and it's amount are being determined internally from jetton transfer notification and therefore mustn't be present here.
 
@@ -541,6 +591,21 @@ Must be sent by the user to the **PoolCreator** or **LiquidityDepository** if on
 transactions succeeded and user decides to cancel previously initiated process.
 As a result of this message execution, all half-way deposited funds will be returned back to the user.
 
+#### Burn (liquidity withdrawal)
+
+To withdraw liquidity, user simply needs to burn his LP tokens by sending the following message to his LP jetton wallet,
+according to [jetton standard](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md#2-burn):
+```tl-b
+burn#595f07bc query_id:uint64 amount:(VarUInteger 16)
+              response_destination:MsgAddress custom_payload:(Maybe ^Cell)
+              = InternalMsgBody;
+```
+
+Although this scheme includes a `custom_payload`, regular jetton wallets do not support it, and therefore there is no
+way for user to provide any extra data related to token burning. That's why we slightly modified code of our LP jetton
+wallets, and they support `custom_payload`.
+If needed, user may use it, passing [WithdrawLiquidityParams](#withdrawliquidityparams) as a `custom_payload`.
+
 ### Miscellaneous
 
 #### Payout
@@ -569,6 +634,15 @@ Must be sent by a user to the **Factory** in order to create new vault.
 |---------------|-----------------------------------------------------------------------|
 | query_id      | Non-unique identifier which you may specify to track this transaction |
 | asset         | Asset for which new vault must be created                             |
+
+#### Notification
+
+```tl-b
+notification#c0ffee36 query_id:uint64 body:^Cell = Notification;
+```
+
+Serves as a wrapper for any outgoing messages proposed by transaction initiator as a marker of operation
+completion status. Therefore, is being sent by **Vault**s or **Pool**s after operation completes.
 
 ### Inter-contract communication
 
@@ -648,7 +722,7 @@ Keep in mind that there's no asset defined in the message, because it can be det
 #### CreatePoolCreatorInternal
 
 ```tl-b
-create_pool_creator_internal#c0ffee24 query_id:uint64 asset:Asset amm:AMM amount:Coins
+create_pool_creator_internal#c0ffee24 query_id:uint64 asset:Asset amount:Coins
                                       creation_params:^PoolCreationParams
 = CreatePoolCreatorInternal;
 ```
@@ -660,7 +734,8 @@ Properties are pretty much the same with [CreatePoolCreatorRequest](#createpoolc
 #### CreatePoolRequest
 
 ```tl-b
-create_pool_request#c0ffee25 query_id:uint64 amount1:Coins amount2:Coins
+create_pool_request#c0ffee25 query_id:uint64 amount1:Coins
+                             amount2:Coins tx_initiator:MsgAddressInt
                              creation_params:^PoolCreationParams proof:^Cell
 = CreatePoolRequest;
 ```
@@ -672,8 +747,11 @@ Properties are pretty much the same with [CreatePoolCreatorRequest](#createpoolc
 #### CreatePoolInternal
 
 ```tl-b
-create_pool_internal#c0ffee26 query_id:uint64 amount1:Coins amount2:Coins
-                              recipient:MsgAddressInt extra_settings:(Maybe ^Cell)
+create_pool_internal#c0ffee26 query_id:uint64 amount1:Coins
+                              amount2:Coins tx_initiator:MsgAddressInt
+                              recipient:MsgAddressInt
+                              use_recipient_on_failure:int1
+                              extra_settings:(Maybe ^Cell)
                               notification_data:(Maybe ^NotificationData)
 = CreatePoolInternal;
 ```
@@ -687,6 +765,7 @@ Properties are pretty much the same with [CreatePoolCreatorRequest](#createpoolc
 ```tl-b
 create_liquidity_depository_request#c0ffee27 query_id:uint64 amount:Coins
                                              params:DepositLiquidityParams
+                                             sender:MsgAddressInt
                                              proof:^Cell
 = CreateLiquidityDepositoryRequest;
 ```
@@ -700,12 +779,13 @@ Keep in mind that there's no asset defined in the message, because it can be det
 | query_id      | Propagated identifier                                                                        |
 | amount        | Amount of this vault's asset user provided as a liquidity for the pool                       |
 | params        | Parameters for liquidity provisioning. See [DepositLiquidityParams](#depositliquidityparams) |
+| sender        | Address of the user who initiated transaction                                                |
 | proof         | Special cell constructed for securing inter-contract communication                           |
 
 #### CreateLiquidityDepositoryInternal
 
 ```tl-b
-create_liquidity_depository_internal#c0ffee28 query_id:uint64 asset:Asset amm:AMM
+create_liquidity_depository_internal#c0ffee28 query_id:uint64 asset:Asset
                                               amount:Coins
                                               params:^DepositLiquidityParamsTrimmed
 = CreateLiquidityDepositoryInternal;
@@ -718,7 +798,8 @@ Properties are pretty much the same with [CreateLiquidityDepositoryRequest](#cre
 #### DepositLiquidityInternal
 
 ```tl-b
-deposit_liquidity_internal#c0ffee29 query_id:uint64 amount1:Coins amount2:Coins
+deposit_liquidity_internal#c0ffee29 query_id:uint64 amount1:Coins
+                                    amount2:Coins tx_initiator:MsgAddressInt
                                     params:^DepositLiquidityParamsTrimmed
                                     proof:^Cell = DepositLiquidityInternal;
 ```
