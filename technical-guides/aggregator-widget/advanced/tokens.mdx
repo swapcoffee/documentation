@@ -69,3 +69,23 @@ These are included automatically, even when no configuration is provided.
 Even if a token is not in the list, users can still discover it using the **built-in token search**.
 
 > ✅ As long as the token is listed on [swap.coffee](https://swap.coffee), it can be found.
+
+## `enableCommunityTokens`
+
+```typescript
+enableCommunityTokens?: boolean;
+```
+
+Controls whether community tokens are included in the main token list. **Defaults to `true`**.
+
+- **`true`** (default): Community tokens are included in the main token list and mixed with whitelist tokens from swap.coffee
+- **`false`**: Only verified or imported tokens will be shown, excluding community tokens
+
+```typescript
+createSwapWidget("#test", {
+  enableCommunityTokens: false, // Only verified tokens
+  otherConfig...
+});
+```
+
+> 📝 **Note** -- When disabled, users will only see tokens that have been officially verified or manually imported, providing a more curated token selection.

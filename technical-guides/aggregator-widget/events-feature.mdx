@@ -26,6 +26,16 @@ Here are the events we currently support:
 
 ****event_swap_result_received**** - ``Triggered when the swap result is received``.
 
+****event_wallet_connected**** - ``Triggered on wallet successfully connected``
+
+****event_wallet_disconnected**** - ``Triggered when wallet was disconnected``
+
+****event_swap_started**** - ``Triggered when SWAP transaction confirmed by wallet and started``
+
+****event_swap_completed**** - ``Triggered when SWAP or MultiSwap operation completed``
+
+****event_multi_swap_started**** - ``Triggered when MultiSwap transaction confirmed by wallet and started``
+
 ---
 
 ### How to Listen our Events
@@ -52,6 +62,11 @@ Each of these events carries additional data that can be accessed through `event
 - **`event_token_imported`**: Contains the details of the imported token.
 - **`event_transactions_built`**: Contains the details of the built transactions.
 - **`event_swap_result_received`**: Contains the result of the swap.
+- **`event_wallet_connected`**: Contains information about the connected wallet, including wallet type and address.
+- **`event_wallet_disconnected`**: Contains information about the disconnected wallet.
+- **`event_swap_started`**: Contains details about the started swap transaction, including transaction hash and tokens involved.
+- **`event_swap_completed`**: Contains the final result of the completed swap operation, including success status and transaction details.
+- **`event_multi_swap_started`**: Contains details about the started multi-swap transaction, including transaction hash and involved token pairs.
 
 ## Conclusion
 
