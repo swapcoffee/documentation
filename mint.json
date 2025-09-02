@@ -170,6 +170,7 @@
             "technical-guides/aggregator-widget/introduction",
             "technical-guides/aggregator-widget/configuration",
             "technical-guides/aggregator-widget/events-feature",
+            "technical-guides/aggregator-widget/playground",
             {
               "group": "Advanced Configuration",
               "icon": "robot",
