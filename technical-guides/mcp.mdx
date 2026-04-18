@@ -1,0 +1,106 @@
+---
+title: 'MCP Server'
+description: 'Connect AI assistants to the swap.coffee knowledge base via the Model Context Protocol.'
+icon: 'plug'
+---
+
+**swap.coffee** runs a hosted [**Model Context Protocol**](https://modelcontextprotocol.io/) server that exposes the full technical documentation — API references, widget guides, DEX smart-contract docs, code snippets, and OpenAPI specs — to any MCP-compatible AI client.
+
+Connect your AI application to the following URL:
+
+```
+https://docs.swap.coffee/mcp
+```
+
+Once connected, assistants like **Claude**, **Cursor**, or any other MCP client can search and read the swap.coffee knowledge base on demand, answer integration questions, and generate working code examples without any copy-pasting from the docs.
+
+## Why MCP?
+
+The **Model Context Protocol** is an open standard for connecting AI applications to external tools and data sources. By exposing our documentation over MCP, we let AI assistants:
+
+- Find the right page for a question before attempting to answer it.
+- Read exact quotes from API references, guides, and OpenAPI specs — no hallucinations.
+- Navigate the docs structurally (list files, grep for keywords, read specific sections).
+- Stay up to date automatically — there is no cached snapshot to re-sync.
+
+The server is **read-only**. It only exposes public documentation. It never has access to API keys, account data, wallet activity, or any private information.
+
+## Connecting
+
+### Claude Desktop / Claude Code
+
+Add the server to your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "swap-coffee": {
+      "url": "https://docs.swap.coffee/mcp"
+    }
+  }
+}
+```
+
+### Cursor, Windsurf and other MCP clients
+
+Any MCP-compatible client can connect to the same URL. Consult your client's documentation for the exact configuration syntax — in most cases it is a single field pointing at `https://docs.swap.coffee/mcp`.
+
+## Available Tools
+
+The hosted server exposes two tools that AI clients can call on behalf of the user.
+
+### `search_swap_coffee`
+
+Semantic search across the entire swap.coffee knowledge base — guides, API references, code examples, DEX documentation. The tool returns contextual content with titles and direct links to the corresponding documentation pages.
+
+**Use it for:**
+- Broad or conceptual queries (*"how does routing work?"*, *"how do I authenticate?"*, *"what is X-Verify?"*).
+- Locating implementation details, code examples, or the right API reference.
+- Finding the right page before reading its full content.
+
+If you need the full content of a specific page, feed its path into `query_docs_filesystem_swap_coffee` — the search result already includes the `.mdx` path you can pass to `head` or `cat`.
+
+### `query_docs_filesystem_swap_coffee`
+
+A read-only virtualized filesystem rooted at `/` that contains **only** the swap.coffee documentation pages and OpenAPI specs. Despite looking like a shell, nothing runs on the user's machine, the server host, or any network — it is a sandbox backed by documentation chunks.
+
+This is how AI clients read full documentation pages: there is no separate *"get page"* tool. To read a page, pass its `.mdx` path (for example, `/technical-guides/aggregator-api/introduction.mdx`) to `head` or `cat`. To search with exact keyword or regex matches, use `rg`. To understand the docs structure, use `tree` or `ls`.
+
+**Supported commands:** `rg` (ripgrep), `grep`, `find`, `tree`, `ls`, `cat`, `head`, `tail`, `stat`, `wc`, `sort`, `uniq`, `cut`, `sed`, `awk`, `jq`, plus basic text utilities. No writes, no network, no process control.
+
+**Each call is stateless.** The working directory always resets to `/` and no shell variables, aliases, or history carry across calls. If you need to operate in a subdirectory, chain commands in one call with `&&` or pass absolute paths.
+
+**Examples:**
+
+| Command | Purpose |
+|:--|:--|
+| `tree / -L 2` | See the top-level directory layout |
+| `rg -il "rate limit" /` | Find all files mentioning *"rate limit"* |
+| `rg -C 3 "apiKey" /technical-guides/` | Show matches with 3 lines of context around each hit |
+| `head -80 /technical-guides/aggregator-api/introduction.mdx` | Read the top 80 lines of a specific page |
+| `cat /technical-guides/tokens-api.mdx` | Read a full page when you need everything |
+| `cat /openapi/spec.json \| jq '.paths \| keys'` | List OpenAPI endpoints |
+
+⚠️ **Note:** Output is truncated to **30 KB per call**. Prefer targeted `rg -C` or `head -N` over broad `cat` on large files. When referencing pages back to the user, convert filesystem paths to URL paths by removing the `.mdx` extension — `/technical-guides/tokens-api.mdx` becomes `/technical-guides/tokens-api`.
+
+## Recommended Workflow
+
+The two tools are complementary. A typical session looks like this:
+
+1. **Start with `search_swap_coffee`** for broad or conceptual questions. It returns the most relevant pages with short excerpts.
+2. **Drill down with `query_docs_filesystem_swap_coffee`** when you need the full content of a page, exact regex matches, or a structural overview of the docs.
+3. **Pass paths between the tools.** The `.mdx` paths returned by `search_swap_coffee` are directly usable with `head` and `cat`.
+
+## Use Cases
+
+- **Scaffold an integration.** *"Using the swap.coffee MCP, generate a TypeScript snippet that fetches a TON → USDT route via the aggregator API and executes it through TonConnect."*
+- **On-the-fly reference.** Ask any question about the widget, DEX contracts, or Tokens API and get an answer grounded in the latest documentation.
+- **Code review.** Paste an existing swap.coffee integration and let the assistant check it against the current API contract.
+- **OpenAPI exploration.** Ask the assistant to enumerate endpoints, list required parameters, or compare response shapes directly from the spec.
+
+## Notes
+
+- The MCP server exposes **public documentation only** — it cannot read or write your account, API keys, or trading history.
+- Documentation is refreshed automatically. There is no need to reconnect after pages change.
+- To query **live data** — current routes, prices, token lists, staking positions — use the [Aggregator API](/technical-guides/aggregator-api/introduction) and [Tokens API](/technical-guides/tokens-api) directly, not the MCP server.
+- If something is missing from the knowledge base or an answer looks wrong, reach out in [@swap.coffee DEV Chat](https://t.me/swapcoffee_dev_chat).
