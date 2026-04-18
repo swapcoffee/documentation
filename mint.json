@@ -142,6 +142,7 @@
       "group": "Technical Guides",
       "icon": "microchip",
       "pages": [
+        "technical-guides/mcp",
         {
           "group": "Aggregator API & SDK",
           "icon": "spider",
@@ -162,7 +163,16 @@
             "technical-guides/thermos/proxy-api"
             ]
         },
-        "technical-guides/tokens-api",
+        {
+          "group": "Tokens API",
+          "icon": "books",
+          "pages": [
+            "technical-guides/tokens-api/introduction",
+            "technical-guides/tokens-api/jettons",
+            "technical-guides/tokens-api/hybrid-search",
+            "technical-guides/tokens-api/labels"
+          ]
+        },
         {
           "group": "Aggregator UI Widget",
           "icon": "window",

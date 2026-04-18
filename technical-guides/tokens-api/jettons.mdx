@@ -1,0 +1,224 @@
+---
+title: 'Jettons'
+description: 'Read jetton metadata, market statistics and per-account holdings.'
+icon: 'coins'
+---
+
+This page describes the canonical **jetton object** returned by the Tokens API and the read-only endpoints that serve it.
+
+## Jetton Object
+
+Each jetton entry contains the following fields:
+
+- **address** *(string, required)*: Raw blockchain address of the jetton master contract. ⚠️ Always returned in raw hex form (`workchain:hash`).
+- **decimals** *(integer, required)*: Number of decimal places the jetton supports.
+- **created_at** *(ISO 8601 datetime)*: Date and time the jetton was added to the list.
+- **total_supply** *(string)*: Total supply in base units (no decimal point).
+- **name** *(string)*: Jetton name, e.g. `Tether USD`.
+- **symbol** *(string)*: Jetton ticker, e.g. `USDT`.
+- **mintable** *(boolean)*: Whether new tokens can be minted.
+- **buy_fee** *(integer)*: On-chain fee (bps) charged on buys, if any.
+- **sell_fee** *(integer)*: On-chain fee (bps) charged on sells, if any.
+- **verification** *(enum)*: Verification status — see [Verification Status](#verification-status).
+- **contract_interface** *(string)*: Implementation identifier (e.g. `jetton_wallet_tonfun`). Used by the aggregator to route through specialized jetton implementations.
+- **image_url** *(string)*: URL of the jetton logo.
+- **market_stats** *(object)*: Aggregated market statistics — see [Market Statistics](#market-statistics).
+- **labels** *(array)*: Labels attached to the jetton — see [Labels](/technical-guides/tokens-api/labels).
+- **scaled_ui_multiplier** *(object)*: Optional UI multiplier (`numerator` / `denominator`) applied on top of `decimals` when displaying balances to end users. Relevant for rebase / scaled-UI jettons.
+
+### Market Statistics
+
+The `market_stats` object aggregates the most recent on-chain and market data:
+
+- **holders_count** *(integer)*: Number of unique jetton holders.
+- **price_usd** *(number)*: Current price in USD.
+- **price_change_5m** *(number)*: Price change over the last 5 minutes (percentage).
+- **price_change_1h** *(number)*: Price change over the last hour (percentage).
+- **price_change_6h** *(number)*: Price change over the last 6 hours (percentage).
+- **price_change_24h** *(number)*: Price change over the last 24 hours (percentage).
+- **price_change_7d** *(number)*: Price change over the last 7 days (percentage).
+- **volume_usd_24h** *(number)*: 24-hour trading volume in USD.
+- **tvl_usd** *(number)*: Total value locked in USD across supported pools.
+- **fdmc** *(number)*: Fully diluted market capitalization in USD.
+- **mcap** *(number)*: Circulating market capitalization in USD.
+- **trust_score** *(integer, 0–100)*: Reliability score computed from multiple signals.
+
+### Verification Status
+
+The `verification` field reflects how swap.coffee classifies a jetton. Possible values:
+
+- **`WHITELISTED`** — the jetton is verified and whitelisted by swap.coffee. Safe and routable; guaranteed to be fee-free.
+- **`COMMUNITY`** — the jetton's contract hash is recognized as safe, but the jetton is not used in swap.coffee routing. Guaranteed to be fee-free.
+- **`UNKNOWN`** — the jetton is not verified and may be unsafe.
+- **`BLACKLISTED`** — the jetton is blacklisted and considered dangerous.
+
+### Example
+
+```json
+{
+  "address": "0:a5d12e31be87867851a28d3ce271203c8fa1a28ae826256e73c506d94d49edad",
+  "decimals": 9,
+  "created_at": "2025-04-14T16:06:08.765Z",
+  "total_supply": "10000000000000000",
+  "name": "swap.coffee",
+  "symbol": "CES",
+  "mintable": false,
+  "buy_fee": 0,
+  "sell_fee": 0,
+  "verification": "WHITELISTED",
+  "contract_interface": "jetton_wallet",
+  "image_url": "https://swap.coffee/logo.webp",
+  "market_stats": {
+    "holders_count": 6133,
+    "price_usd": 0.8406369824666934,
+    "price_change_5m": 0,
+    "price_change_1h": 0,
+    "price_change_6h": 0,
+    "price_change_24h": 0.37,
+    "price_change_7d": 1.12,
+    "volume_usd_24h": 192.946,
+    "tvl_usd": 72106.4,
+    "fdmc": 8250090,
+    "mcap": 8250090,
+    "trust_score": 100
+  },
+  "labels": [
+    {
+      "label": "new",
+      "label_id": 1,
+      "created_at": "2025-07-15T10:52:55.611Z",
+      "expires_at": "2025-07-22T10:52:55.585Z"
+    }
+  ]
+}
+```
+
+---
+
+## List Jettons
+
+```http
+GET /api/v3/jettons
+```
+
+Returns up to 100 jettons per request. Supports filtering and pagination.
+
+**Query parameters:**
+
+- **search** *(string)* — free-text filter across jetton name and symbol.
+- **verification** *(array of verification statuses, default: `[WHITELISTED]`)* — verification statuses to include. Accepted values: `WHITELISTED`, `COMMUNITY`, `UNKNOWN`, `BLACKLISTED`.
+  ⚠️ To pass multiple values, repeat the parameter in the query string, e.g. `verification=WHITELISTED&verification=COMMUNITY`.
+- **label_id** *(integer)* — return only jettons carrying a specific label.
+- **page** *(integer, min: 1, default: 1)* — page number.
+- **size** *(integer, 1–100, default: 100)* — number of jettons per page.
+
+**Response:** `200 OK` — array of [jetton objects](#jetton-object), with a `Cache-Control` header for caching hints.
+
+---
+
+## Get a Single Jetton
+
+```http
+GET /api/v3/jettons/{address}
+```
+
+Fetch a single jetton by its master address.
+
+**Parameters:**
+
+- **address** *(path, required)* — raw jetton master address.
+- **refresh_price** *(query, boolean, default: true)* — whether to recompute the current price on the fly from the latest pools state. Set to `false` for a cheaper read that returns a slightly stale price.
+
+**Responses:** `200 OK` — a [jetton object](#jetton-object) | `404 Not Found` — jetton is unknown.
+
+---
+
+## Bulk Fetch by Addresses
+
+```http
+POST /api/v3/jettons/by-addresses
+```
+
+Fetch up to 100 jettons at once. The request body is a JSON array of raw jetton master addresses.
+
+**Query parameter:** `refresh_price` *(boolean, default: true)*.
+
+**Request body:**
+
+```json
+[
+  "0:a5d12e31be87867851a28d3ce271203c8fa1a28ae826256e73c506d94d49edad",
+  "0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe"
+]
+```
+
+**Response:** `200 OK` — array of [jetton objects](#jetton-object).
+
+---
+
+## Top Holders
+
+```http
+GET /api/v3/jettons/{address}/holders
+```
+
+Returns the **top 10 holders** of a jetton.
+
+**Response:** `200 OK` — array of wallet entries, each with:
+
+- **owner** — wallet owner address.
+- **wallet** — jetton wallet address.
+- **master** — jetton master address.
+- **balance** — balance in nano units (string).
+
+---
+
+## Price Chart
+
+```http
+GET /api/v3/jettons/{address}/price-chart
+```
+
+Historical price series for a jetton.
+
+**Query parameters:**
+
+- **from** *(datetime, required)* — start of the window (inclusive).
+- **to** *(datetime, required)* — end of the window (inclusive).
+- **currency** *(enum: `usd` | `ton`, default: `usd`)* — denomination for returned values.
+
+**Response:** `200 OK`
+
+```json
+{
+  "points": [
+    { "time": "2025-04-14T16:06:08.765Z", "value": 0.8406 },
+    { "time": "2025-04-14T17:06:08.765Z", "value": 0.8411 }
+  ]
+}
+```
+
+---
+
+## Account Jettons
+
+```http
+GET /api/v3/accounts/{address}/jettons
+```
+
+Returns all jettons owned by an account, with balances and the attached jetton metadata.
+
+**Response shape:**
+
+```json
+{
+  "items": [
+    {
+      "balance": "1000000000",
+      "jetton_address": "0:...",
+      "jetton_wallet": "0:...",
+      "jetton": { /* ApiJetton object */ }
+    }
+  ]
+}
+```

@@ -1,0 +1,57 @@
+---
+title: 'Labels'
+description: 'Tag jettons with labels for filtering and UI classification.'
+icon: 'tags'
+---
+
+Labels classify jettons for UI or filtering purposes. They are attached to jettons and appear in the `labels` array of every [jetton object](/technical-guides/tokens-api/jettons#jetton-object).
+
+## Label Structure
+
+Every label entry attached to a jetton has the following fields:
+
+- **label** *(string)*: Label name, e.g. `new`.
+- **label_id** *(integer)*: Numeric identifier.
+- **created_at** *(datetime)*: When the label was attached.
+- **expires_at** *(datetime, optional)*: When the label will be automatically removed (for time-limited labels).
+
+```json
+{
+  "label": "new",
+  "label_id": 1,
+  "created_at": "2025-07-15T10:52:55.611Z",
+  "expires_at": "2025-07-22T10:52:55.585Z"
+}
+```
+
+## Common Labels
+
+- **`new`** — the jetton was listed recently; the label remains for seven days.
+- **`contest`** — the jetton participates in a contest or promotion on swap.coffee.
+- **`cashback`** — swapping this jetton on swap.coffee qualifies for cashback rewards.
+
+## Filtering Jettons by Label
+
+Pass the numeric `label_id` to the [`GET /api/v3/jettons`](/technical-guides/tokens-api/jettons#list-jettons) endpoint to return only jettons carrying that label:
+
+```http
+GET /api/v3/jettons?label_id=1
+```
+
+## List All Labels
+
+```http
+GET /api/v3/labels
+```
+
+Returns every label known to the service, with its numeric `id`, `label` name, and `created_at` timestamp. Use this endpoint to resolve a label name to its `label_id` before filtering.
+
+**Response:** `200 OK`
+
+```json
+[
+  { "id": 1, "label": "new",      "created_at": "2025-01-01T00:00:00.000Z" },
+  { "id": 2, "label": "contest",  "created_at": "2025-02-01T00:00:00.000Z" },
+  { "id": 3, "label": "cashback", "created_at": "2025-03-01T00:00:00.000Z" }
+]
+```

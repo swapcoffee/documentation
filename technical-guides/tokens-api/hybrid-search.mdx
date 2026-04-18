@@ -1,0 +1,76 @@
+---
+title: 'Hybrid Search'
+description: 'Search across DEX-listed jettons and pre-DEX memepad jettons in one call.'
+icon: 'magnifying-glass'
+---
+
+Hybrid search queries jettons across two sources at once:
+
+- **DEX-listed jettons** — standard jettons tradeable through swap.coffee routing.
+- **Memepad jettons** — pre-DEX jettons still living on a bonding-curve launchpad (for example [TONFUN](https://tonfun.me/)). Once a memepad jetton's bonding curve graduates, the jetton transitions to a regular DEX-listed jetton.
+
+This is the recommended endpoint to power a universal *"find a token"* input in your UI.
+
+---
+
+## Endpoint
+
+```http
+GET /api/v3/hybrid-search
+```
+
+**Query parameters:**
+
+- **search** *(string)* — free-text query across jetton name and symbol.
+- **verification** *(array, default: `[WHITELISTED]`)* — verification statuses to include. Accepted values: `WHITELISTED`, `COMMUNITY`, `UNKNOWN`, `BLACKLISTED`. Pass multiple values by repeating the parameter.
+- **kind** *(enum)* — scope of the search:
+  - `ALL` — everything
+  - `DEXES` *(default)* — only jettons listed on DEXes
+  - `MEMES_ALL` — all meme jettons (DEXes + memepads)
+  - `MEMES_DEXES` — meme jettons already graduated to DEXes
+  - `MEMES_MEMEPADS` — meme jettons still on memepads
+- **sort** *(enum)* — ordering: `FDMC`, `TVL`, `MCAP`, `VOLUME_24H`, `PRICE_CHANGE_24H`.
+- **page** *(integer, 1–100, default: 1)*.
+- **size** *(integer, 1–100, default: 20)*.
+
+⚠️ **Note:** `page` and `sort` are ignored for some `kind` values where ordering is implicit. Refer to the [Swagger UI](https://tokens.swap.coffee/api/v3/swagger-ui) for the exact behavior per kind.
+
+---
+
+## Response
+
+`200 OK` — array of polymorphic jetton objects, discriminated by a `type` field:
+
+- `type: "common"` → a standard [jetton object](/technical-guides/tokens-api/jettons#jetton-object).
+- `type: "memepad"` → a [memepad jetton](#memepad-jettons).
+
+---
+
+## Memepad Jettons
+
+A memepad jetton has a smaller shape than a DEX-listed jetton, because the usual market statistics (TVL across multiple pools, holders count, multi-window price changes) do not apply while the bonding curve is still live.
+
+### Top-level fields
+
+- **address** *(string, required)*: Raw jetton master address.
+- **protocol** *(string, required)*: Memepad protocol identifier, e.g. `TONFUN`.
+- **total_supply** *(string, required)*
+- **decimals** *(integer, required)*
+- **mintable** *(boolean, required)*
+- **verification** *(enum, required)*: Same enum as for a regular jetton.
+- **created_at** *(datetime, required)*
+- **name** *(string)*
+- **symbol** *(string)*
+- **image_url** *(string)*
+- **market_stats** *(object)* — see below.
+
+### `market_stats` for memepad jettons
+
+- **price_usd** *(number)* — current price in USD on the curve.
+- **tvl_usd** *(number)* — total value locked in the curve.
+- **fdmc_usd** *(number)* — fully diluted market cap in USD.
+- **collected_ton** *(number)* — TON already collected toward graduation.
+- **max_ton** *(number)* — TON target for graduation.
+- **progress** *(number, 0–1)* — share of the bonding curve completed.
+
+Once a memepad jetton graduates, subsequent calls return it as a regular [jetton object](/technical-guides/tokens-api/jettons#jetton-object) with the full market statistics.

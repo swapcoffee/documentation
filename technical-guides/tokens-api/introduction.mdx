@@ -1,0 +1,59 @@
+---
+title: 'Introduction'
+description: 'Read live token data for the TON blockchain from the swap.coffee Tokens API.'
+icon: 'wand-sparkles'
+---
+
+**swap.coffee** constantly updates its list of supported tokens (or **jettons** on **TON**).
+This list determines which assets our swap algorithms can use.
+Token data and its market properties **(price, TVL, volume, holders, FDMC, etc.)** are aggregated from various sources and refreshed regularly.
+
+You can read the list to power your own applications — build analytics dashboards, token explorers, trading bots, or integrate the data directly into your product.
+
+## Endpoints
+
+- **Base URL:** `https://tokens.swap.coffee`
+- **Interactive Swagger UI:** [`/api/v3/swagger-ui`](https://tokens.swap.coffee/api/v3/swagger-ui)
+- **OpenAPI specification:** [`/api/v3/openapi.yaml`](https://tokens.swap.coffee/api/v3/openapi.yaml)
+
+You can generate your own API wrapper with any OpenAPI code generator.
+
+## Rate Limits
+
+All read endpoints documented here are public and require no authentication. Public access is rate-limited to roughly **1 request per second per IP**. Beyond that, the API returns `429 Too Many Requests`.
+
+If you need higher throughput for an integration, request an API key through the [Get API Key](https://swapcoffee.typeform.com/to/Zx49Ho3y) form and pass it via the `X-Api-Key` header:
+
+```bash
+curl -H "X-Api-Key: <your-api-key>" https://tokens.swap.coffee/api/v3/jettons
+```
+
+## Error Format
+
+All error responses share the same shape:
+
+```json
+{ "error": "human-readable error description" }
+```
+
+Typical status codes:
+
+- `400 Bad Request` — malformed input or invalid parameter.
+- `404 Not Found` — the requested jetton or resource does not exist.
+- `429 Too Many Requests` — rate limit hit.
+
+## Conventions
+
+- All datetime fields are in **ISO 8601** format.
+- Jetton addresses are always returned in **raw** form (`workchain:hash`).
+- Token amounts are returned as **strings in base units** (no decimal point applied).
+
+## Community Libraries
+
+⚠️ **Note:** The libraries below are maintained by third parties rather than the swap.coffee team. We cannot guarantee their stability or correctness.
+
+| Language | Library                                                                         | Description                       |
+|:---------|:--------------------------------------------------------------------------------|:----------------------------------|
+| Python   | [py-stollen/swapcoffee-tokens](https://github.com/py-stollen/swapcoffee-tokens) | Python wrapper for the Tokens API (legacy v2) |
+
+If you maintain a Tokens API wrapper in another language and would like it listed here, reach out in [@swap.coffee DEV Chat](https://t.me/swapcoffee_dev_chat).
