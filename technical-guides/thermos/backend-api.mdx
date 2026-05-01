@@ -5,9 +5,17 @@ icon: 'gear'
 ---
 ## First Steps
 
-To get started with the Thermos Market API, you should first obtain an `API token` and provide `Telegram User ID` which will be used to identify you in the system.
+To get started with the Thermos Market API, you need to obtain an `API token`. You can issue it yourself directly from our Telegram bot.
 
-You can do this by contacting us via [Telegram](https://t.me/micronovax).
+1. Open a private chat with [@thermos](https://t.me/thermos).
+2. Send `/api`.
+3. The bot will reply with your personal token inside a Telegram spoiler — tap to reveal, long-press to copy.
+
+The token is tied to the Telegram account you sent the command from. Running `/api` again later returns the same token, so you don't need to save the message — you can always re-request it.
+
+If you haven't used Thermos before, the bot will first ask you to open the app so an account gets created. Afterwards `/api` will work.
+
+⚠️ **Treat this token like a password.** It grants **full access to your account**, including your balance and gifts. Thermos staff and support will **never** ask you for it — anyone who does is trying to scam you. If the token leaks, contact support immediately so it can be rotated.
 
 API token simplifies your integration with the Thermos Market API and allows you to perform actions without carrying about authentication with Telegram's `initData`.
 The basic rate limit is two requests per second, but you can request a higher limit if needed by contacting us.
