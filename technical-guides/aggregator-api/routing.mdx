@@ -21,7 +21,7 @@ Otherwise, you receive the output token in your wallet.
 Swapping assets using our SDK and TonConnect SDK:
 
 ```typescript
-import {ApiTokenAddress, RoutingApi} from "@swap-coffee/sdk";
+import {ApiTokenAddress, RoutingApi} from "@swapcoffee/sdk";
 import TonConnect, {WalletInfo, WalletInfoRemote} from "@tonconnect/sdk";
 
 const connector = await setupTonConnect()
@@ -150,7 +150,7 @@ Here are the key differences from `buildRoute`:
 Here's how you can use `buildMultiAssetRoute` to swap both TON and USDT for CES:
 
 ```typescript
-import {ApiTokenAddress, RoutingApi} from "@swap-coffee/sdk";
+import {ApiTokenAddress, RoutingApi} from "@swapcoffee/sdk";
 
 const connector = await setupTonConnect()
 const routingApi = new RoutingApi()
@@ -227,7 +227,7 @@ Along with the transaction built, you receive the `route_id` field. It can be us
 **SDK** contains inbuilt method for waiting execution results of route's transactions. Promise will be resolved when all transactions are in terminal status (one of `succeeded`, `failed` or `timed_out`).
 
 ```typescript
-import {ApiTokenAddress, RoutingApi, waitForTransactionResults} from "@swap-coffee/sdk";
+import {ApiTokenAddress, RoutingApi, waitForTransactionResults} from "@swapcoffee/sdk";
 
 const connector = await setupTonConnect();
 const routingApi = new RoutingApi();
